@@ -13,12 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="HIDE\**" />
-    <EmbeddedResource Remove="HIDE\**" />
-    <None Remove="HIDE\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Remove="Service\csMinecraftTCPRequest.cs" />
     <Compile Remove="Service\csMinecraftTCPResponse.cs" />
   </ItemGroup>
