@@ -5,6 +5,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using System.Text;
+using System.Threading.Channels;
 using static Console_Program_Control.Data.csDiscordVoiceChannelLog;
 
 namespace Console_Program_Control.Service
@@ -126,6 +127,7 @@ namespace Console_Program_Control.Service
 				csConsoleTargetControl _ctc = csConsoleTargetControl.GetInstance();
 
 				commandContext = new SocketCommandContext(client, message);
+				var dmChannel = await arg.Author.CreateDMChannelAsync();
 
 				msg = msg.Remove(0, setting.CommandSTX.Length).Trim();
 
@@ -139,261 +141,205 @@ namespace Console_Program_Control.Service
 					return;
 				}
 
-				if (commandSplit.Length == 1)
+				bool isResponseDM = false;
+
+				switch (commandSplit[0].ToLower())
 				{
-					switch (commandSplit[0].ToLower())
-					{
-						case "상태":
-						case "state":
+					case "상태":
+					case "state":
+						{
+							response = string.Format("선택된 게임 서버는 {0}이고 현재 {1} 상태.",
+										_ctc.getTarget().Title,
+										control.isAlive() ? "가동" : "비 가동");
+						}
+						break;
+					case "서버목록":
+					case "목록":
+					case "serverlist":
+					case "list":
+						{
+							StringBuilder sb = new StringBuilder();
+							sb.AppendLine("============== 서버 목록 =============");
+							for (int i = 0; i < _ctc.consoles.Count; i++)
 							{
-								response = string.Format("선택된 게임 서버는 {0}이고 현재 {1} 상태.",
-											_ctc.getTarget().Title,
-											control.isAlive() ? "가동" : "비 가동");
+								sb.AppendLine(string.Format("{0:D2} : {1}", i + 1, _ctc.consoles[i].Title));
 							}
+							response = sb.ToString();
+						}
+						break;
+					case "명령어":
+					case "help":
+						response = GetHelp();
+						break;
+					case "시작":
+					case "start":
+						if (control.isAlive())
+						{
+							response = "서버가 이미 시작 되어있서";
 							break;
-						case "서버목록":
-						case "목록":
-						case "serverlist":
-						case "list":
-							{
-								StringBuilder sb = new StringBuilder();
-								sb.AppendLine("============== 서버 목록 =============");
-								for (int i = 0; i < _ctc.consoles.Count; i++)
-								{
-									sb.AppendLine(string.Format("{0:D2} : {1}", i + 1, _ctc.consoles[i].Title));
-								}
-								response = sb.ToString();
-							}
+						}
+						control.Start();
+						if (control.isAlive())
+						{
+							response = "서버가 시작 중이야";
+						}
+						else
+						{
+							response = "서버가 시작을 할수 없서";
+						}
+						break;
+					case "정지":
+					case "stop":
+					case "종료":
+					case "close":
+						if (control.isAlive())
+						{
+							response = "서버 정지를 시작할거야";
+						}
+						else
+						{
+							response = "서버가 이미 꺼져있는 걸";
 							break;
-						case "명령어":
-						case "help":
-							response = GetHelp();
-							break;
-						case "시작":
-						case "start":
-							if (control.isAlive())
+						}
+
+						control.Close(commandContext);
+
+						break;
+					case "강제종료":
+					case "kill":
+						if (_ctc.getTarget().NotUseKill == false)
+						{
+							response = "강제종료가 허용되지 않는 서버야";
+						}
+						else
+						{
+							control.Kill();
+							Thread.Sleep(_ctc.getTarget().KillDelay);
+							if (control.isAlive() == false)
 							{
-								response = "서버가 이미 시작 되어있서";
-								break;
-							}
-							control.Start();
-							if (control.isAlive())
-							{
-								response = "서버가 시작 중이야";
+								response = "서버를 죽였서";
 							}
 							else
 							{
-								response = "서버가 시작을 할수 없서";
+								response = "어라 안 죽네?";
 							}
-							break;
-						case "정지":
-						case "stop":
-						case "종료":
-						case "close":
+						}
+						break;
+					case "서버명령":
+					case "명령":
+					case "servercommand":
+					case "command":
+						{
+							response = ServerCommand(message, commandSplit.ToList());
+						}
+						break;
+					case "서버접속방법":
+					case "접속방법":
+						{
+							StringBuilder sb = new StringBuilder();
+
+							sb.AppendLine("============== 접속 방법 =============");
+
+							for (int i = 0; i < _ctc.getTarget().AccessData.Count; i++)
+							{
+								sb.Append(i + 1).Append(" : ").AppendLine(_ctc.getTarget().AccessData[i]);
+							}
+
+							sb.AppendLine("================= 끝 =================");
+
+							response = sb.ToString();
+						}
+						break;
+					case "섹스":
+					case "sex":
+						{
+							response = "님 혹시 기계 박이?";
+						}
+						break;
+					case "서버변경":
+					case "변경":
+					case "serverchange":
+					case "change":
+						{
 							if (control.isAlive())
 							{
-								response = "서버 정지를 시작할거야";
+								response = "서버가 가동중이라 변경이 불가능해";
 							}
 							else
 							{
-								response = "서버가 이미 꺼져있는 걸";
-								break;
-							}
-
-							control.Close(commandContext);
-
-							break;
-						case "강제종료":
-						case "kill":
-							if (_ctc.getTarget().NotUseKill == false)
-							{
-								response = "강제종료가 허용되지 않는 서버야";
-							}
-							else
-							{
-								control.Kill();
-								Thread.Sleep(_ctc.getTarget().KillDelay);
-								if (control.isAlive() == false)
+								if (int.TryParse(commandSplit[1], out int serverIndex))
 								{
-									response = "서버를 죽였서";
-								}
-								else
-								{
-									response = "어라 안 죽네?";
-								}
-							}
-							break;
-						case "서버명령":
-						case "명령":
-						case "servercommand":
-						case "command":
-							{
-								response = ServerCommand(message, commandSplit.ToList());
-							}
-							break;
-						case "서버접속방법":
-						case "접속방법":
-							{
-								StringBuilder sb = new StringBuilder();
-
-								sb.AppendLine("============== 접속 방법 =============");
-
-								for (int i = 0; i < _ctc.getTarget().AccessData.Count; i++)
-								{
-									sb.Append(i + 1).Append(" : ").AppendLine(_ctc.getTarget().AccessData[i]);
-								}
-
-								sb.AppendLine("================= 끝 =================");
-
-								response = sb.ToString();
-							}
-							break;
-						case "음성로그":
-						case "voicelog":
-							{
-								var dmChannel = await arg.Author.CreateDMChannelAsync();
-								if (message.Author.Id != csPrivateCode.DiscordAdminID)
-								{
-									response = "본인에게 그런 권한이 있을 꺼라 생각한건가?";
-								}
-								else
-								{
-									csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
-									response = log.ShowLastLog();
-									FormMain.GetInstance().MainLogAppend(false, response);
-									_ = dmChannel.SendMessageAsync(response);
-								}
-							}
-							return;
-						case "섹스":
-						case "sex":
-							{
-								response = "님 혹시 기계 박이?";
-								FormMain.GetInstance().MainLogAppend(false, response);
-								_ = message.ReplyAsync(response);
-							}
-							return;
-						default:
-							response = string.Format("{0}\r\n{1}", "그게 머야???", GetHelp());
-							break;
-					}
-
-					_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
-					FormMain.GetInstance().MainLogAppend(false, response);
-				}
-				else if (commandSplit.Length == 2)
-				{
-					switch (commandSplit[0].ToLower())
-					{
-						case "서버변경":
-						case "변경":
-						case "serverchange":
-						case "change":
-							{
-								if (control.isAlive())
-								{
-									response = "서버가 가동중이라 변경이 불가능해";
-								}
-								else
-								{
-									if (int.TryParse(commandSplit[1], out int serverIndex))
+									if (serverIndex > _ctc.consoles.Count + 1 || serverIndex <= 0)
 									{
-										if (serverIndex > _ctc.consoles.Count + 1 || serverIndex <= 0)
-										{
-											response = "해당 번호를 가지고 있는 서버는 없서";
-										}
-										else
-										{
-											_ctc.Selected = serverIndex - 1;
-											response = string.Format("{0}번의 번호를 가진 {1}(으)로 변경 완료", serverIndex, _ctc.consoles[_ctc.Selected].Title);
-										}
+										response = "해당 번호를 가지고 있는 서버는 없서";
 									}
 									else
 									{
-										bool isChangeDone = false;
-										for (int i = 0; i < _ctc.consoles.Count; i++)
-										{
-											if (_ctc.consoles[i].Title.Equals(commandSplit[1]))
-											{
-												isChangeDone = true;
-												_ctc.Selected = i;
-												break;
-											}
-										}
-
-										if (isChangeDone)
-										{
-											response = string.Format("{0}(으)로 변경 완료", _ctc.consoles[_ctc.Selected].Title);
-										}
-										else
-										{
-											response = string.Format("{0}을(를) 찾을 수 없서", commandSplit[1]);
-										}
+										_ctc.Selected = serverIndex - 1;
+										response = string.Format("{0}번의 번호를 가진 {1}(으)로 변경 완료", serverIndex, _ctc.consoles[_ctc.Selected].Title);
 									}
-								}
-								_ctc.Save();
-							}
-							break;
-						case "서버명령":
-						case "명령":
-						case "servercommand":
-						case "command":
-							{
-								response = ServerCommand(message, commandSplit.ToList());
-							}
-							break;
-						case "가위바위보":
-							{
-								response = csRPS.GetInstance().ActiveRPS(commandSplit[1].Trim());
-								FormMain.GetInstance().MainLogAppend(false, response);
-								_ = message.ReplyAsync(response);
-							}
-							return;
-						case "음성로그":
-						case "voicelog":
-							{
-								var dmChannel = await arg.Author.CreateDMChannelAsync();
-								if (message.Author.Id != csPrivateCode.DiscordAdminID)
-								{
-									response = "본인에게 그런 권한이 있을 꺼라 생각한건가?";
 								}
 								else
 								{
-									csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
-									response = log.ShowLastLog(commandSplit[1]);
-									FormMain.GetInstance().MainLogAppend(false, response);
-									_ = dmChannel.SendMessageAsync(response);
+									bool isChangeDone = false;
+									for (int i = 0; i < _ctc.consoles.Count; i++)
+									{
+										if (_ctc.consoles[i].Title.Equals(commandSplit[1]))
+										{
+											isChangeDone = true;
+											_ctc.Selected = i;
+											break;
+										}
+									}
+
+									if (isChangeDone)
+									{
+										response = string.Format("{0}(으)로 변경 완료", _ctc.consoles[_ctc.Selected].Title);
+									}
+									else
+									{
+										response = string.Format("{0}을(를) 찾을 수 없서", commandSplit[1]);
+									}
 								}
 							}
-							return;
-						default:
-							response = string.Format("{0}\r\n{1}", "그게 머야???", GetHelp());
-							break;
-					}
+							_ctc.Save();
+						}
+						break;
+					case "가위바위보":
+						{
+							response = csRPS.GetInstance().ActiveRPS(commandSplit[1].Trim());
+						}
+						break;
+					case "음성로그":
+					case "voicelog":
+						{
+							isResponseDM = true;
+							if (message.Author.Id != csPrivateCode.DiscordAdminID)
+							{
+								response = "본인에게 그런 권한이 있을 꺼라 생각한건가?";
+							}
+							else
+							{
+								csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
+								response = log.ShowLastLog(commandSplit.Length >= 1 ? commandSplit[1] : "10");
+							}
+						}
+						break;
+					default:
+						response = string.Format("{0}\r\n{1}", "그게 머야???", GetHelp());
+						break;
+				}
 
-					_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
-					FormMain.GetInstance().MainLogAppend(false, response);
+				if (isResponseDM == false)
+				{
+					_ = message.ReplyAsync(response);
 				}
 				else
 				{
-					switch (commandSplit[0].ToLower())
-					{
-						case "서버명령":
-						case "명령":
-						case "servercommand":
-						case "command":
-							{
-								response = ServerCommand(message, commandSplit.ToList());
-							}
-							break;
-						default:
-							response = string.Format("{0}\r\n{1}", "그게 머야???", GetHelp());
-							break;
-					}
-
-					_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
-					FormMain.GetInstance().MainLogAppend(false, response);
+					_ = dmChannel.SendMessageAsync(response);
 				}
+				//_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
+				FormMain.GetInstance().MainLogAppend(false, response);
 			}
 		}
 
