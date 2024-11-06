@@ -109,7 +109,7 @@ namespace Console_Program_Control.Service
 		private async Task OnClientMessage(SocketMessage arg)
 		{
 			//수신한 메시지가 사용자가 보낸 게 아닐 때 취소
-			var message = arg as SocketUserMessage;
+			SocketUserMessage message = arg as SocketUserMessage;
 			if (message == null) return;
 
 			// 봇 채팅 방어
@@ -148,9 +148,29 @@ namespace Console_Program_Control.Service
 					case "상태":
 					case "state":
 						{
-							response = string.Format("선택된 게임 서버는 {0}이고 현재 {1} 상태.",
-										_ctc.getTarget().Title,
-										control.isAlive() ? "가동" : "비 가동");
+							StringBuilder sb = new StringBuilder();
+
+							sb.Append("선택된 게임 서버는 ");
+							sb.Append(_ctc.getTarget().Title);
+							sb.Append("이고 현재 ");
+
+							if (control.isAlive())
+							{
+								if (control.getLongActiveTime(out string runTime))
+								{
+									sb.Append(runTime).Append("째 가동 상태.");
+								}
+								else
+								{
+									sb.Append("가동 상태.");
+								}
+							}
+							else
+							{
+								sb.Append("비 가동 상태.");
+							}
+
+							response = sb.ToString();
 						}
 						break;
 					case "서버목록":
@@ -169,59 +189,66 @@ namespace Console_Program_Control.Service
 						break;
 					case "명령어":
 					case "help":
-						response = GetHelp();
+						{
+							response = GetHelp();
+						}
 						break;
 					case "시작":
 					case "start":
-						if (control.isAlive())
 						{
-							response = "서버가 이미 시작 되어있서";
-							break;
-						}
-						control.Start();
-						if (control.isAlive())
-						{
-							response = "서버가 시작 중이야";
-						}
-						else
-						{
-							response = "서버가 시작을 할수 없서";
+							if (control.isAlive())
+							{
+								response = "서버가 이미 시작 되어있서";
+								break;
+							}
+							control.Start();
+							if (control.isAlive())
+							{
+								response = "서버가 시작 중이야";
+							}
+							else
+							{
+								response = "서버가 시작을 할수 없서";
+							}
 						}
 						break;
 					case "정지":
 					case "stop":
 					case "종료":
 					case "close":
-						if (control.isAlive())
 						{
-							response = "서버 정지를 시작할거야";
-						}
-						else
-						{
-							response = "서버가 이미 꺼져있는 걸";
-							break;
-						}
-
-						control.Close(commandContext);
-
-						break;
-					case "강제종료":
-					case "kill":
-						if (_ctc.getTarget().NotUseKill == false)
-						{
-							response = "강제종료가 허용되지 않는 서버야";
-						}
-						else
-						{
-							control.Kill();
-							Thread.Sleep(_ctc.getTarget().KillDelay);
-							if (control.isAlive() == false)
+							if (control.isAlive())
 							{
-								response = "서버를 죽였서";
+								response = "서버 정지를 시작할거야";
 							}
 							else
 							{
-								response = "어라 안 죽네?";
+								response = "서버가 이미 꺼져있는 걸";
+								break;
+							}
+
+							control.Close(commandContext);
+						}
+						break;
+					case "강제종료":
+					case "kill":
+						{
+							if (_ctc.getTarget().NotUseKill == false)
+							{
+								response = "강제종료가 허용되지 않는 서버야";
+							}
+							else
+							{
+								control.Kill();
+								Thread.Sleep(_ctc.getTarget().KillDelay);
+								if (control.isAlive() == false)
+								{
+									response = "서버를 죽였서";
+								}
+								else
+								{
+									response = "어라 안 죽네?";
+								}
 							}
 						}
 						break;
@@ -250,12 +277,6 @@ namespace Console_Program_Control.Service
 							response = sb.ToString();
 						}
 						break;
-					case "섹스":
-					case "sex":
-						{
-							response = "님 혹시 기계 박이?";
-						}
-						break;
 					case "서버변경":
 					case "변경":
 					case "serverchange":
@@ -264,6 +285,10 @@ namespace Console_Program_Control.Service
 							if (control.isAlive())
 							{
 								response = "서버가 가동중이라 변경이 불가능해";
+							}
+							else if (commandSplit.Length < 2)
+							{
+								response = "파라메터 부족!";
 							}
 							else
 							{
@@ -321,8 +346,14 @@ namespace Console_Program_Control.Service
 							else
 							{
 								csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
-								response = log.ShowLastLog(commandSplit.Length >= 1 ? commandSplit[1] : "10");
+								response = log.ShowLastLog(commandSplit.Length >= 2 ? commandSplit[1] : "10");
 							}
+						}
+						break;
+					case "섹스":
+					case "sex":
+						{
+							response = "님 혹시 기계 박이?";
 						}
 						break;
 					default:
@@ -352,7 +383,7 @@ namespace Console_Program_Control.Service
 			sb.AppendLine("======== 게임 서버 제어 시스템 =======");
 			sb.Append(setting.CommandSTX).AppendLine("상태(state)");
 			sb.Append(setting.CommandSTX).AppendLine("서버목록,목록(serverlist,list)");
-			sb.Append(setting.CommandSTX).AppendLine("서버변경,변경(serverchange,change)");
+			sb.Append(setting.CommandSTX).AppendLine("서버변경,변경(serverchange,change) (해당 숫자 or 이름)");
 			sb.Append(setting.CommandSTX).AppendLine("서버접속방법,접속방법");
 			sb.Append(setting.CommandSTX).AppendLine("서버명령,명령(servercommand,command)");
 			sb.AppendLine();

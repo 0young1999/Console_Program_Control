@@ -74,6 +74,41 @@ namespace Console_Program_Control.Service
 			}
 		}
 
+		public bool getLongActiveTime(out string _RunTime)
+		{
+			_RunTime = string.Empty;
+
+			if (isAlive() == false) return false;
+
+			try
+			{
+				Process[] pss = Process.GetProcessesByName(process.ProcessName);
+
+				DateTime fs = DateTime.Now;
+
+				foreach (Process ps in pss)
+				{
+					DateTime dt = ps.StartTime;
+
+					if (dt < fs)
+					{
+						fs = dt;
+					}
+				}
+
+				TimeSpan lt = DateTime.Now - fs;
+
+				_RunTime = string.Format("{0:D2}일 {1:D2}시 {2:D2}분 {3:D2}초", 
+					lt.Days, lt.Hours, lt.Minutes, lt.Seconds);
+
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
+		}
+
 		public void Kill()
 		{
 			if (isAlive())
@@ -127,6 +162,8 @@ namespace Console_Program_Control.Service
 		public void DiscordGameCloseThreadMethod()
 		{
 			SocketCommandContext commandContext = DiscordGameCloseThread_commandContext;
+
+			Thread.Sleep(1000);
 
 			if (isAlive())
 			{
