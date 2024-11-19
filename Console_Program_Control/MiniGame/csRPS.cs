@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Console_Program_Control.MiniGame
 {
@@ -14,7 +15,7 @@ namespace Console_Program_Control.MiniGame
 
         private static object LockRPS = new object();
 
-        public string ActiveRPS(string requestActionCommand)
+        public string ActiveRPS(string nickName, string requestActionCommand)
         {
             lock (LockRPS)
             {
@@ -22,16 +23,13 @@ namespace Console_Program_Control.MiniGame
 
 				switch (requestActionCommand)
 				{
-					case "가위":
-					case "찌":
+					case "S":
 						requestAction = RPSAction.가위;
 						break;
-					case "바위":
-					case "묵":
+					case "R":
 						requestAction = RPSAction.바위;
 						break;
-					case "보":
-					case "빠":
+					case "P":
 						requestAction = RPSAction.보;
 						break;
 				}
@@ -46,6 +44,8 @@ namespace Console_Program_Control.MiniGame
 				StringBuilder sb = new StringBuilder();
 
 				sb.Append(responseAction.ToString()).AppendLine("!!");
+
+				sb.Append(nickName).Append("의 게임에서 ");
 
 				if (requestAction == responseAction)
 				{
@@ -67,7 +67,7 @@ namespace Console_Program_Control.MiniGame
 							break;
 					}
 
-					sb.Append(WOL ? "내가 이겼다!" : "내가 졌다!");
+					sb.Append(WOL ? "이겼다!" : "졌다!");
 				}
 
 				return sb.ToString();
