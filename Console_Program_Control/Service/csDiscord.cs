@@ -3,6 +3,7 @@ using Console_Program_Control.HIDE.CODE;
 using Console_Program_Control.MiniGame;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using System.Text;
 using System.Threading.Channels;
@@ -28,6 +29,8 @@ namespace Console_Program_Control.Service
 		DiscordSocketClient client;
 		CommandService commands;
 		SocketCommandContext commandContext;
+		//InteractionService _interactionService;
+		//IServiceProvider _services;
 
 		private csDiscordSetting setting = csDiscordSetting.GetInstance();
 
