@@ -1,5 +1,6 @@
 ﻿using Console_Program_Control.Data;
 using Console_Program_Control.HIDE.CODE;
+using Console_Program_Control.Service.AI;
 using Console_Program_Control.Service.Command;
 using Discord;
 using Discord.Commands;
@@ -81,9 +82,10 @@ namespace Console_Program_Control.Service
 			csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
 			csDiscordVoiceChannelLogData data = new csDiscordVoiceChannelLogData();
 			data.EventTime = DateTime.Now;
-			data.EventUser = (user as SocketGuildUser).Nickname;
+			data.EventUser = (user as SocketGuildUser).DisplayName;
 			data.BChannelName = before.VoiceChannel?.Name ?? "";
 			data.AChannelName = after.VoiceChannel?.Name ?? "";
+			data.UID = (user as SocketGuildUser).Id.ToString();
 
 			// 유저가 채널에 들어갈 때
 			if (before.VoiceChannel == null && after.VoiceChannel != null)
@@ -124,9 +126,10 @@ namespace Console_Program_Control.Service
 			string msg = arg.Content;
 			if (msg.IndexOf(setting.CommandSTX) == 0)
 			{
-				string SenderName = (message.Author as SocketGuildUser).Nickname;
+				string SenderName = (message.Author as SocketGuildUser).DisplayName;
+				string SenderUID = (message.Author as SocketGuildUser).Id.ToString();
 
-				FormMain.GetInstance().MainLogAppend(true, string.Format("{0} : {1}", SenderName, msg));
+				FormMain.GetInstance().MainLogAppend(true, string.Format("{0}({2}) : {1}", SenderName, msg, SenderUID));
 				string response = string.Empty;
 				csConsoleProgramControl control = csConsoleProgramControl.GetInstance();
 				csConsoleTargetControl _ctc = csConsoleTargetControl.GetInstance();
@@ -186,6 +189,29 @@ namespace Console_Program_Control.Service
 				//_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
 				FormMain.GetInstance().MainLogAppend(false, response);
 			}
+			else
+			{
+				if (string.IsNullOrEmpty(msg)) return;
+
+				csAutoResponse auto = csAutoResponse.GetInstance();
+
+				if (auto.getOutPut(msg, out string outPut))
+				{
+					if (string.IsNullOrEmpty(outPut))
+					{
+						return;
+					}
+					else
+					{
+						commandContext = new SocketCommandContext(client, message);
+						_ = commandContext.Channel.SendMessageAsync(outPut);
+					}
+				}
+				else
+				{
+					auto.addInput(msg, out _);
+				}
+			}
 		}
 
 		private async Task InteractionCreated(SocketInteraction arg)
@@ -214,7 +240,7 @@ namespace Console_Program_Control.Service
 
 					if (int.TryParse(values[0], out int serverIndex))
 					{
-						if (serverIndex > _ctc.consoles.Count + 1 || serverIndex < 0)
+						if (serverIndex > _ctc.consoles.Count || serverIndex < 0)
 						{
 							await messageComponent.RespondAsync("해당 번호를 가지고 있는 서버는 없서");
 						}

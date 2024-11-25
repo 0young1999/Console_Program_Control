@@ -1,24 +1,23 @@
 ﻿using System.Text;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace Console_Program_Control.MiniGame
 {
 	public class csRPS
-    {
-        private static csRPS instance;
-        public static csRPS GetInstance()
-        {
-            if (instance == null) instance = new csRPS();
-            return instance;
-        }
-        private csRPS() { }
+	{
+		private static csRPS instance;
+		public static csRPS GetInstance()
+		{
+			if (instance == null) instance = new csRPS();
+			return instance;
+		}
+		private csRPS() { }
 
-        private static object LockRPS = new object();
+		private static object LockRPS = new object();
 
-        public string ActiveRPS(string nickName, string requestActionCommand)
-        {
-            lock (LockRPS)
-            {
+		public string ActiveRPS(string nickName, string requestActionCommand)
+		{
+			lock (LockRPS)
+			{
 				RPSAction requestAction = RPSAction.ErrorAction;
 
 				switch (requestActionCommand)
@@ -72,14 +71,14 @@ namespace Console_Program_Control.MiniGame
 
 				return sb.ToString();
 			}
-        }
+		}
 
-        public enum RPSAction
-        {
-            ErrorAction = -1,
-            가위 = 0,
-            바위 = 1,
-            보 = 2,
-        }
-    }
+		public enum RPSAction
+		{
+			ErrorAction = -1,
+			가위 = 0,
+			바위 = 1,
+			보 = 2,
+		}
+	}
 }

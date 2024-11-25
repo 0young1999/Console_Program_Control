@@ -83,6 +83,7 @@ namespace Console_Program_Control.Data
             public EDiscordVoiceChannelLog EventType = EDiscordVoiceChannelLog.입장;
             public string BChannelName = "";
             public string AChannelName = "";
+			public string UID = "";
 
 			public static csDiscordVoiceChannelLogData? parse(string log)
 			{
@@ -90,7 +91,7 @@ namespace Console_Program_Control.Data
 
 				string[] splits = log.Split(splitChar);
 
-				if (splits.Length >= 5)
+				if (splits.Length >= 6)
 				{
 					// Check
 					// Check - EventTime
@@ -119,6 +120,9 @@ namespace Console_Program_Control.Data
 					// AChannelName
 					data.AChannelName = splits[4];
 
+					// UID
+					data.UID = splits[5];
+
 					return data;
 				}
 
@@ -135,7 +139,8 @@ namespace Console_Program_Control.Data
 				sb.Append(EventUser).Append(splitChar);
 				sb.Append((int)EventType).Append(splitChar);
 				sb.Append(BChannelName).Append(splitChar);
-				sb.Append(AChannelName);
+				sb.Append(AChannelName).Append(splitChar);
+				sb.Append(UID);
 				sb.AppendLine();
 
 				return sb.ToString();
@@ -147,13 +152,13 @@ namespace Console_Program_Control.Data
                 switch(EventType)
                 {
                     case EDiscordVoiceChannelLog.입장:
-                        result = string.Format("[{0}] {1}님이 {2}에 입장", EventTime.ToString("HH:mm:ss:fff"), EventUser, AChannelName);
+                        result = string.Format("[{0}] {1}({3})님이 {2}에 입장", EventTime.ToString("HH:mm:ss:fff"), EventUser, AChannelName, UID);
 						break;
 					case EDiscordVoiceChannelLog.퇴장:
-						result = string.Format("[{0}] {1}님이 {2}에서 퇴장", EventTime.ToString("HH:mm:ss:fff"), EventUser, BChannelName);
+						result = string.Format("[{0}] {1}({3})님이 {2}에서 퇴장", EventTime.ToString("HH:mm:ss:fff"), EventUser, BChannelName, UID);
 						break;
 					case EDiscordVoiceChannelLog.이동:
-						result = string.Format("[{0}] {1}님이 {2}에서 {3}으로 이동", EventTime.ToString("HH:mm:ss:fff"), EventUser, BChannelName, AChannelName);
+						result = string.Format("[{0}] {1}({4})님이 {2}에서 {3}으로 이동", EventTime.ToString("HH:mm:ss:fff"), EventUser, BChannelName, AChannelName, UID);
 						break;
                 }
                 return result;

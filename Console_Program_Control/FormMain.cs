@@ -1,5 +1,6 @@
 using Console_Program_Control.Data;
 using Console_Program_Control.Service;
+using Console_Program_Control.Service.AI;
 using GameSideProgramAutoStarter;
 using Young.Setting;
 
@@ -26,7 +27,7 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += string.Format("({0})", "2024-11-20 05:28");
+			Text += string.Format("({0})", "2024-11-26 01:30");
 		}
 
 		private void tmTime_Tick(object sender, EventArgs e)
@@ -110,6 +111,7 @@ namespace Console_Program_Control
 			sf._SetObject(csDiscordSetting.GetInstance(), "디스코드");
 			sf._SetObject(csConsoleTargetControl.GetInstance(), "프로그램 컨트롤");
 			//sf._SetObject(csMinecraft.GetInstance(), "마크 연동");
+			sf._SetObject(csAutoResponse.GetInstance(), "자동 응답");
 			sf.Shown += (showSender, showE) =>
 			{
 				Invoke((MethodInvoker)delegate

@@ -1,8 +1,10 @@
 ﻿using Console_Program_Control.Data;
 using Console_Program_Control.HIDE.CODE;
 using Console_Program_Control.MiniGame;
+using Console_Program_Control.Service.AI;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using System.Text;
 
 namespace Console_Program_Control.Service.Command
@@ -42,9 +44,9 @@ namespace Console_Program_Control.Service.Command
 			LastRequestServerStateButtonIndex = DateTime.Now.Ticks.ToString();
 			// 버튼 생성
 			var button = new ComponentBuilder()
-				.WithButton("시작", $"Console_Server_Start_{LastRequestServerStateButtonIndex.ToString()}", ButtonStyle.Secondary)
-				.WithButton("종료", $"Console_Server_Stop_{LastRequestServerStateButtonIndex.ToString()}", ButtonStyle.Secondary)
-				.WithButton("강제 종료", $"Console_Server_Kill_{LastRequestServerStateButtonIndex.ToString()}", ButtonStyle.Danger);
+				.WithButton("시작", $"Console_Server_Start_{LastRequestServerStateButtonIndex}", ButtonStyle.Secondary)
+				.WithButton("종료", $"Console_Server_Stop_{LastRequestServerStateButtonIndex}", ButtonStyle.Secondary)
+				.WithButton("강제 종료", $"Console_Server_Kill_{LastRequestServerStateButtonIndex}", ButtonStyle.Danger);
 
 			// 버튼이 포함된 메시지 응답
 			await RespondAsync(sb.ToString(), components: button.Build());
@@ -298,18 +300,46 @@ namespace Console_Program_Control.Service.Command
 		{
 			string[] splits = dynamicData.Split('_');
 
-			string nickName = Context.Guild.GetUser(Context.User.Id)?.Nickname;
+			string nickName = Context.Guild.GetUser(Context.User.Id)?.DisplayName ?? "UnKnown";
 
+#pragma warning disable CS8600 // null 리터럴 또는 가능한 null 값을 null을 허용하지 않는 형식으로 변환하는 중입니다.
 			if (LastRequestRPSIndex.TryGetValue(Context.User.Id, out string index) == false ||
 				index != splits[1])
 			{
 				await RespondAsync(string.Format("{0} 당신 게임이 아닐 건데?", nickName));
 				return;
 			}
+#pragma warning restore CS8600 // null 리터럴 또는 가능한 null 값을 null을 허용하지 않는 형식으로 변환하는 중입니다.
 
 			LastRequestRPSIndex.Remove(Context.User.Id);
 
-			await RespondAsync(csRPS.GetInstance().ActiveRPS(nickName, splits[0]));
+			await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+			{
+				msg.Content = csRPS.GetInstance().ActiveRPS(nickName, splits[0]);
+				msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+			});
 		}
+
+		[SlashCommand("자동_응답_부하", "봇의 자동응답에 걸리는 부하도를 표시합니다.")]
+		public async Task AsyncAutoResponseCheckLoad()
+		{
+			if (csAutoResponse.GetInstance().checkLoad(out int use, out int total))
+			{
+				await RespondAsync(string.Format("TOTAL : {0}\n응답 가능 : {1}", total, use));
+			}
+			else
+			{
+				await RespondAsync("부하값을 가져오지 못했어");
+			}
+		}
+
+		//[SlashCommand("테스트용_음성채널진입", "테스트용")]
+		//public async Task AsyncEnterVoidChennel()
+		//{
+		//	if (Context.Guild.GetUser(Context.User.Id)?.VoiceChannel != null)
+		//	{
+		//		Context.Guild.GetUser(Context.User.Id)?.VoiceChannel.ConnectAsync();
+		//	}
+		//}
 	}
 }
