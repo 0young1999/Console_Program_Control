@@ -20,6 +20,7 @@ namespace Console_Program_Control.Service.AI
 			Save();
 		}
 
+		public bool isActive = true;
 		public List<csAutoResponseData> datas { get; set; } = new List<csAutoResponseData>();
 
 		[Serializable]

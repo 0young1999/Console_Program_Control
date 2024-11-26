@@ -5,6 +5,7 @@ using Console_Program_Control.Service.AI;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using System;
 using System.Text;
 
 namespace Console_Program_Control.Service.Command
@@ -320,16 +321,131 @@ namespace Console_Program_Control.Service.Command
 			});
 		}
 
-		[SlashCommand("자동_응답_부하", "봇의 자동응답에 걸리는 부하도를 표시합니다.")]
-		public async Task AsyncAutoResponseCheckLoad()
+		[SlashCommand("자동_응답", "봇의 자동응답을 제어합니다.")]
+		public async Task AsyncAutoResponseState()
 		{
-			if (csAutoResponse.GetInstance().checkLoad(out int use, out int total))
+			if (Context.User.Id != csPrivateCode.DiscordAdminID)
 			{
-				await RespondAsync(string.Format("TOTAL : {0}\n응답 가능 : {1}", total, use));
+				await RespondAsync("본인에게 그런 권한이 있을 꺼라 생각한건가?");
+				return;
 			}
-			else
+
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine("자동 응답 제어");
+			sb.Append("상태 : ").AppendLine(csAutoResponse.GetInstance().isActive ? "가동중" : "중단중");
+
+			// 버튼 생성
+			var button = new ComponentBuilder()
+				.WithButton("가동", "btnAutoResponse_Start", ButtonStyle.Secondary)
+				.WithButton("중단", "btnAutoResponse_Stop", ButtonStyle.Secondary)
+				.WithButton("재부팅", "btnAutoResponse_Reboot", ButtonStyle.Secondary)
+				.WithButton("부하", "btnAutoResponse_CheckLoad", ButtonStyle.Secondary);
+
+			// 버튼이 포함된 메시지 응답
+			await RespondAsync(sb.ToString(), components: button.Build());
+		}
+
+		[ComponentInteraction("btnAutoResponse_*")]
+		public async Task Button_AutoResponse(string dynamicData)
+		{
+			if (Context.User.Id != csPrivateCode.DiscordAdminID)
 			{
-				await RespondAsync("부하값을 가져오지 못했어");
+				await RespondAsync("본인에게 그런 권한이 있을 꺼라 생각한건가?");
+				return;
+			}
+
+			csAutoResponse ar = csAutoResponse.GetInstance();
+
+			switch (dynamicData)
+			{
+				case "Start":
+					{
+						if (ar.isActive == false)
+						{
+							ar.isActive = true;
+
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = "자동 응답 시작";
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+						else
+						{
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = "자동 응답이 이미 가동 중이야";
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+					}
+					break;
+				case "Stop":
+					{
+						if (ar.isActive)
+						{
+							ar.isActive = false;
+							ar.Save();
+
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = "자동 응답 중단";
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+						else
+						{
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = "자동 응답이 이미 중단 중이야";
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+					}
+					break;
+				case "Reboot":
+					{
+						if (ar.isActive)
+						{
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = "자동 응답이 가동중이라 재부팅을 할수 없서";
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+							break;
+						}
+
+						ar.Load();
+
+						ar.isActive = true;
+
+						await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+						{
+							msg.Content = "자동 응답을 재부팅하였서";
+							msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+						});
+					}
+					break;
+				case "CheckLoad":
+					{
+						if (csAutoResponse.GetInstance().checkLoad(out int use, out int total))
+						{
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = string.Format("TOTAL : {0}\n응답 가능 : {1}", total, use);
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+						else
+						{
+							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+							{
+								msg.Content = string.Format("부하값을 가져오지 못했어");
+								msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+							});
+						}
+					}
+					break;
 			}
 		}
 

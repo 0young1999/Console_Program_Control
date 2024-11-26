@@ -7,6 +7,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text;
 using static Console_Program_Control.Data.csDiscordVoiceChannelLog;
 
 namespace Console_Program_Control.Service
@@ -191,9 +192,9 @@ namespace Console_Program_Control.Service
 			}
 			else
 			{
-				if (string.IsNullOrEmpty(msg)) return;
-
+				// 자동 응답
 				csAutoResponse auto = csAutoResponse.GetInstance();
+				if (string.IsNullOrEmpty(msg) || auto.isActive == false) return;
 
 				if (auto.getOutPut(msg, out string outPut))
 				{
@@ -203,6 +204,16 @@ namespace Console_Program_Control.Service
 					}
 					else
 					{
+						string SenderUID = (message.Author as SocketGuildUser).Id.ToString();
+						StringBuilder sb = new StringBuilder();
+						sb.AppendLine("자동 응답");
+						sb.Append("INPUT : ");
+						sb.Append((message.Author as SocketGuildUser).DisplayName);
+						sb.Append('(').Append((message.Author as SocketGuildUser).Id.ToString()).Append(") ");
+						sb.AppendLine(msg);
+						sb.Append("OUTPUT : ").Append(outPut);
+
+						FormMain.GetInstance().MainLogAppend(false, sb.ToString());
 						commandContext = new SocketCommandContext(client, message);
 						_ = commandContext.Channel.SendMessageAsync(outPut);
 					}
