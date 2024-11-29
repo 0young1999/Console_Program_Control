@@ -7,6 +7,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using System;
 using System.Text;
+using Young;
 
 namespace Console_Program_Control.Service.Command
 {
@@ -386,6 +387,8 @@ namespace Console_Program_Control.Service.Command
 						{
 							ar.isActive = false;
 							ar.Save();
+							ar.enable.Save();
+							ar.disable.Save();
 
 							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 							{
@@ -416,6 +419,8 @@ namespace Console_Program_Control.Service.Command
 						}
 
 						ar.Load();
+						ar.enable.Load();
+						ar.disable.Load();
 
 						ar.isActive = true;
 
@@ -447,6 +452,14 @@ namespace Console_Program_Control.Service.Command
 					}
 					break;
 			}
+		}
+
+		[SlashCommand("오늘의_알찬_글", "위키 피디아의 오늘의 알찬 글을 불러옵니다.")]
+		public async Task AsyncTodayWord()
+		{
+			csWikiParse.GetInstance().tryParseTodayPage(out string result);
+			FormMain.GetInstance().MainLogAppend(false, result);
+			await RespondAsync(result);
 		}
 
 		//[SlashCommand("테스트용_음성채널진입", "테스트용")]

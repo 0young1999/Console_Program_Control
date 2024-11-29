@@ -114,6 +114,9 @@ namespace Console_Program_Control.Service
 			log.AppendLog(data);
 		}
 
+		// 자동 응답 최소 시간
+		private DateTime lastSendAutoResponseTime = DateTime.Now;
+
 		private async Task OnClientMessage(SocketMessage arg)
 		{
 			//수신한 메시지가 사용자가 보낸 게 아닐 때 취소
@@ -204,9 +207,17 @@ namespace Console_Program_Control.Service
 					}
 					else
 					{
+						if (DateTime.Now - lastSendAutoResponseTime < new TimeSpan(0, 0, 5))
+						{
+							FormMain.GetInstance().MainLogAppend(false, "자동 응답\n상태 : 자동 응답 제한 시간 미달");
+							return;
+						}
+						lastSendAutoResponseTime = DateTime.Now;
+
 						string SenderUID = (message.Author as SocketGuildUser).Id.ToString();
 						StringBuilder sb = new StringBuilder();
 						sb.AppendLine("자동 응답");
+						sb.AppendLine("상태 : 정상");
 						sb.Append("INPUT : ");
 						sb.Append((message.Author as SocketGuildUser).DisplayName);
 						sb.Append('(').Append((message.Author as SocketGuildUser).Id.ToString()).Append(") ");
