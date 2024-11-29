@@ -110,7 +110,7 @@ namespace Console_Program_Control.Service
 				data.EventType = EDiscordVoiceChannelLog.이동;
 			}
 
-			FormMain.GetInstance().MainLogAppend(true, data.ToString());
+			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordVoiceChatLog, true, data.ToString());
 			log.AppendLog(data);
 		}
 
@@ -133,7 +133,7 @@ namespace Console_Program_Control.Service
 				string SenderName = (message.Author as SocketGuildUser).DisplayName;
 				string SenderUID = (message.Author as SocketGuildUser).Id.ToString();
 
-				FormMain.GetInstance().MainLogAppend(true, string.Format("{0}({2}) : {1}", SenderName, msg, SenderUID));
+				FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCustomCommand, true, string.Format("{0}({2}) : {1}", SenderName, msg, SenderUID));
 				string response = string.Empty;
 				csConsoleProgramControl control = csConsoleProgramControl.GetInstance();
 				csConsoleTargetControl _ctc = csConsoleTargetControl.GetInstance();
@@ -149,7 +149,7 @@ namespace Console_Program_Control.Service
 				{
 					response = "설정이 진행중이라 명령을 받을 수 없서.";
 					_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
-					FormMain.GetInstance().MainLogAppend(false, response);
+					FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCustomCommand, false, response);
 					return;
 				}
 
@@ -191,7 +191,7 @@ namespace Console_Program_Control.Service
 					_ = dmChannel.SendMessageAsync(response);
 				}
 				//_ = commandContext.Channel.SendMessageAsync(string.Format("{0}", response));
-				FormMain.GetInstance().MainLogAppend(false, response);
+				FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCustomCommand, false, response);
 			}
 			else
 			{
@@ -209,14 +209,13 @@ namespace Console_Program_Control.Service
 					{
 						if (DateTime.Now - lastSendAutoResponseTime < new TimeSpan(0, 0, 5))
 						{
-							FormMain.GetInstance().MainLogAppend(false, "자동 응답\n상태 : 자동 응답 제한 시간 미달");
+							FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordAutoResponse, false, "자동 응답\n상태 : 자동 응답 제한 시간 미달");
 							return;
 						}
 						lastSendAutoResponseTime = DateTime.Now;
 
 						string SenderUID = (message.Author as SocketGuildUser).Id.ToString();
 						StringBuilder sb = new StringBuilder();
-						sb.AppendLine("자동 응답");
 						sb.AppendLine("상태 : 정상");
 						sb.Append("INPUT : ");
 						sb.Append((message.Author as SocketGuildUser).DisplayName);
@@ -224,7 +223,7 @@ namespace Console_Program_Control.Service
 						sb.AppendLine(msg);
 						sb.Append("OUTPUT : ").Append(outPut);
 
-						FormMain.GetInstance().MainLogAppend(false, sb.ToString());
+						FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordAutoResponse, false, sb.ToString());
 						commandContext = new SocketCommandContext(client, message);
 						_ = commandContext.Channel.SendMessageAsync(outPut);
 					}
@@ -286,7 +285,7 @@ namespace Console_Program_Control.Service
 		private Task OnClientLogReceived(LogMessage msg)
 		{
 			//Console.WriteLine(msg.ToString());  //로그 출력
-			FormMain.GetInstance().MainLogAppend(true, string.Format("{0} : {1}", "system", msg.ToString()));
+			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordAPI, true, msg.ToString());
 			return Task.CompletedTask;
 		}
 	}

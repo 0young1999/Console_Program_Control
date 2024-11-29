@@ -175,7 +175,7 @@ namespace Console_Program_Control.Service
 
 						string responseMsg = string.Format("게임 서버에 명령 전송 중({1}/{2}) : {0}", _ctc.getTarget().KillCommand[i], i + 1, _ctc.getTarget().KillCommand.Count);
 						commandContext.Channel.SendMessageAsync(responseMsg);
-						FormMain.GetInstance().MainLogAppend(false, responseMsg);
+						FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordSendCommandConsoleServer, false, responseMsg);
 
 						WaitKillDelay();
 					}

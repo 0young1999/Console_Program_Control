@@ -457,18 +457,11 @@ namespace Console_Program_Control.Service.Command
 		[SlashCommand("오늘의_알찬_글", "위키 피디아의 오늘의 알찬 글을 불러옵니다.")]
 		public async Task AsyncTodayWord()
 		{
+			string nickName = Context.Guild.GetUser(Context.User.Id)?.DisplayName ?? "UnKnown";
+			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCommandWikiParse, true, nickName);
 			csWikiParse.GetInstance().tryParseTodayPage(out string result);
-			FormMain.GetInstance().MainLogAppend(false, result);
+			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCommandWikiParse, false, result);
 			await RespondAsync(result);
 		}
-
-		//[SlashCommand("테스트용_음성채널진입", "테스트용")]
-		//public async Task AsyncEnterVoidChennel()
-		//{
-		//	if (Context.Guild.GetUser(Context.User.Id)?.VoiceChannel != null)
-		//	{
-		//		Context.Guild.GetUser(Context.User.Id)?.VoiceChannel.ConnectAsync();
-		//	}
-		//}
 	}
 }

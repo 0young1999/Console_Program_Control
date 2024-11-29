@@ -27,7 +27,7 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += string.Format("({0})", "2024-11-30 12:45");
+			Text += string.Format("({0})", "2024-11-30 02:51");
 		}
 
 		private void tmTime_Tick(object sender, EventArgs e)
@@ -67,14 +67,15 @@ namespace Console_Program_Control
 			}
 		}
 
-		private string MainLogPath = "";
-		public void MainLogAppend(bool isRequest, string msg)
+		private DateTime LogStartTime = DateTime.Now;
+		public void MainLogAppend(eMainLogType type, bool isRequest, string msg)
 		{
 			try
 			{
 				lock (rtbDiscord)
 				{
-					string logMsg = string.Format("[{0}:{1}] {2}\r\n", isRequest ? "R" : "W", DateTime.Now.ToString("HH:mm:ss:fff"), msg);
+					string logMsg = string.Format("[{0}:{1}]{3}\r\n{2}\r\n",
+						isRequest ? "R" : "W", DateTime.Now.ToString("HH:mm:ss:fff"), msg, type.ToString());
 
 					rtbDiscord.Invoke((MethodInvoker)delegate
 					{
@@ -82,17 +83,24 @@ namespace Console_Program_Control
 						rtbDiscord.ScrollToCaret();
 					});
 
-					if (string.IsNullOrEmpty(MainLogPath))
+					// 통합 로그
+					string totalLogPath = string.Format("MainLog\\{0}.log", LogStartTime.ToString("yyyyMMddHHmmss"));
+					if (Directory.Exists(Path.GetDirectoryName(totalLogPath)) == false)
 					{
-						MainLogPath = string.Format("MainLog\\{0}.log", DateTime.Now.ToString("yyyyMMddHHmmss"));
+						Directory.CreateDirectory(Path.GetDirectoryName(totalLogPath));
 					}
 
-					if (Directory.Exists(Path.GetDirectoryName(MainLogPath)) == false)
+					File.AppendAllText(totalLogPath, logMsg);
+
+					// 개별 로그
+					string logPath = string.Format("MainLog\\{1}\\{0}.log", LogStartTime.ToString("yyyyMMddHHmmss"), type.ToString());
+
+					if (Directory.Exists(Path.GetDirectoryName(logPath)) == false)
 					{
-						Directory.CreateDirectory(Path.GetDirectoryName(MainLogPath));
+						Directory.CreateDirectory(Path.GetDirectoryName(logPath));
 					}
 
-					File.AppendAllText(MainLogPath, logMsg);
+					File.AppendAllText(logPath, logMsg);
 				}
 			}
 			catch { }
@@ -160,5 +168,15 @@ namespace Console_Program_Control
 		{
 			_control.Kill();
 		}
+	}
+	public enum eMainLogType
+	{
+		System = 0,
+		DiscordAPI = 1,
+		DiscordCustomCommand = 2,
+		DiscordAutoResponse = 3,
+		DiscordVoiceChatLog = 4,
+		DiscordSendCommandConsoleServer = 5,
+		DiscordCommandWikiParse = 6,
 	}
 }
