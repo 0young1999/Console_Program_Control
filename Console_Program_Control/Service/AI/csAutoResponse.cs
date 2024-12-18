@@ -8,15 +8,12 @@ namespace Console_Program_Control.Service.AI
 		private static csAutoResponse instance;
 		public static csAutoResponse GetInstance()
 		{
-			if (instance == null) instance = new csAutoResponse();
-			return instance;
+			return instance ??= new csAutoResponse();
 		}
 
 		private csAutoResponse()
 		{
 			Load();
-			enable = csAutoResponseEnable.GetInstance();
-			disable = csAutoResponseDisable.GetInstance();
 		}
 		~csAutoResponse()
 		{
@@ -27,7 +24,8 @@ namespace Console_Program_Control.Service.AI
 		{
 			(enable ??= csAutoResponseEnable.GetInstance()).Load();
 			(disable ??= csAutoResponseDisable.GetInstance()).Load();
-			
+			(needCheck ??= csAutoResponseNeedCheck.GetInstance()).Load();
+
 			for (int i = 0; i < enable.datas.Count; i++)
 			{
 				if (string.IsNullOrEmpty(enable.datas[i].output))
@@ -50,6 +48,17 @@ namespace Console_Program_Control.Service.AI
 				}
 			}
 
+			for (int i = 0; i < needCheck.datas.Count; i++)
+			{
+				if (string.IsNullOrEmpty(needCheck.datas[i].output) == false)
+				{
+					enable.datas.Add((csAutoResponseData)needCheck.datas[i].Copy());
+					needCheck.datas.RemoveAt(i);
+					i--;
+					continue;
+				}
+			}
+
 			Save();
 		}
 
@@ -57,17 +66,36 @@ namespace Console_Program_Control.Service.AI
 		{
 			(enable ??= csAutoResponseEnable.GetInstance()).Save();
 			(disable ??= csAutoResponseDisable.GetInstance()).Save();
+			(needCheck ??= csAutoResponseNeedCheck.GetInstance()).Save();
 		}
 
 		public bool isActive = true;
 		public csAutoResponseEnable enable;
 		public csAutoResponseDisable disable;
+		public csAutoResponseNeedCheck needCheck;
 
 		[Serializable]
 		public class csAutoResponseData : csAutoSaveLoad
 		{
 			public string input { get; set; } = "";
 			public string output { get; set; } = "";
+
+			public List<csAutoResponseReason> reasons { get; set; }
+
+			[Serializable]
+			public class csAutoResponseReason : csAutoSaveLoad
+			{
+				public eAutoResponseSituationType type { get; set; } = eAutoResponseSituationType.None;
+
+				public string reason { get; set; } = string.Empty;
+			}
+		}
+
+		public enum eAutoResponseSituationType
+		{
+			None = 0,
+			Hi = 1,
+			Bye = 2,
 		}
 
 		[Serializable]
@@ -114,9 +142,31 @@ namespace Console_Program_Control.Service.AI
 			public List<csAutoResponseData> datas { get; set; } = new List<csAutoResponseData>();
 		}
 
+		[Serializable]
+		public class csAutoResponseNeedCheck : csAutoSaveLoad
+		{
+			private static csAutoResponseNeedCheck instance;
+			public static csAutoResponseNeedCheck GetInstance()
+			{
+				if (instance == null) instance = new csAutoResponseNeedCheck();
+				return instance;
+			}
+			private csAutoResponseNeedCheck()
+			{
+				AutoSavePath = "Data\\AI\\NeedCheckData.xml";
+				Load();
+			}
+			~csAutoResponseNeedCheck()
+			{
+				Save();
+			}
+
+			public List<csAutoResponseData> datas { get; set; } = new List<csAutoResponseData>();
+		}
+
 		public static object lockList = new object();
 
-		public bool getOutPut(string input, out string output)
+		public bool tryGetOutPut(string input, out string output)
 		{
 			output = string.Empty;
 
@@ -134,7 +184,17 @@ namespace Console_Program_Control.Service.AI
 				{
 					if (data.input.Equals(input))
 					{
-						return true;
+						csDiscord discord = csDiscord.GetInstance();
+
+						if (discord.lastVoiceInTime >= DateTime.Now || discord.lastVoiceOutTime >= DateTime.Now)
+						{
+							disable.datas.Remove(data);
+							return false;
+						}
+						else
+						{
+							return true;
+						}
 					}
 				}
 			}
@@ -142,15 +202,39 @@ namespace Console_Program_Control.Service.AI
 			return false;
 		}
 
-		public bool addInput(string input, out string errorMsg)
+		public bool tryAddInput(eAutoResponseSituationType type, string reason, string input, out string errorMsg)
 		{
 			errorMsg = string.Empty;
 			lock (lockList)
 			{
 				try
 				{
-					disable.datas.Add(new csAutoResponseData() { input = input });
-					disable.Save();
+					if (type == eAutoResponseSituationType.None)
+					{
+						disable.datas.Add(new csAutoResponseData() { input = input.ToUpper() });
+						disable.Save();
+					}
+					else
+					{
+						bool isActive = false;
+
+						foreach (csAutoResponseData data in needCheck.datas)
+						{
+							if (data.input == input.ToUpper())
+							{
+								isActive = true;
+								data.reasons.Add(new csAutoResponseData.csAutoResponseReason() { type = type, reason = reason });
+							}
+						}
+
+						if (isActive == false)
+						{
+							needCheck.datas.Add(new csAutoResponseData() { input = input.ToUpper() });
+							needCheck.datas[needCheck.datas.Count - 1].reasons.Add(new csAutoResponseData.csAutoResponseReason() { type = type, reason = reason });
+						}
+
+						needCheck.Save();
+					}
 					return true;
 				}
 				catch (Exception e)
@@ -161,7 +245,7 @@ namespace Console_Program_Control.Service.AI
 			}
 		}
 
-		public bool checkLoad(out int use, out int total)
+		public bool tryCheckLoad(out int use, out int total)
 		{
 			use = 0;
 			total = 0;

@@ -34,6 +34,10 @@ namespace Console_Program_Control.Service
 		IServiceProvider services;
 
 		private csDiscordSetting setting = csDiscordSetting.GetInstance();
+		public DateTime lastVoiceOutTime = DateTime.MinValue;
+		public string lastVoiceOutName = "";
+		public DateTime lastVoiceInTime = DateTime.MinValue;
+		public string lastVoiceInName = "";
 
 		private void Run()
 		{
@@ -84,29 +88,27 @@ namespace Console_Program_Control.Service
 			csDiscordVoiceChannelLogData data = new csDiscordVoiceChannelLogData();
 			data.EventTime = DateTime.Now;
 			data.EventUser = (user as SocketGuildUser).DisplayName;
-			data.BChannelName = before.VoiceChannel?.Name ?? "";
-			data.AChannelName = after.VoiceChannel?.Name ?? "";
+			data.BChannel = before;
+			data.AChannel = after;
 			data.UID = (user as SocketGuildUser).Id.ToString();
 
 			// 유저가 채널에 들어갈 때
 			if (before.VoiceChannel == null && after.VoiceChannel != null)
 			{
-				//Console.WriteLine($"{user.Username} has joined voice channel: {after.VoiceChannel.Name}");
-
 				data.EventType = EDiscordVoiceChannelLog.입장;
+				lastVoiceInTime = DateTime.Now + new TimeSpan(0, 0, 30);
+				lastVoiceInName = data.EventUser.ToString();
 			}
 			// 유저가 채널에서 나갈 때
 			else if (before.VoiceChannel != null && after.VoiceChannel == null)
 			{
-				//Console.WriteLine($"{user.Username} has left voice channel: {before.VoiceChannel.Name}");
-
 				data.EventType = EDiscordVoiceChannelLog.퇴장;
+				lastVoiceOutTime = DateTime.Now + new TimeSpan(0, 0, 30);
+				lastVoiceOutName = data.EventUser.ToString();
 			}
 			// 유저가 다른 보이스 채널로 이동할 때
 			else if (before.VoiceChannel != after.VoiceChannel)
 			{
-				//Console.WriteLine($"{user.Username} moved from {before.VoiceChannel.Name} to {after.VoiceChannel.Name}");
-
 				data.EventType = EDiscordVoiceChannelLog.이동;
 			}
 
@@ -157,21 +159,6 @@ namespace Console_Program_Control.Service
 
 				switch (commandSplit[0].ToLower())
 				{
-					case "음성로그":
-					case "voicelog":
-						{
-							isResponseDM = true;
-							if (message.Author.Id != csPrivateCode.DiscordAdminID)
-							{
-								response = "본인에게 그런 권한이 있을 꺼라 생각한건가?";
-							}
-							else
-							{
-								csDiscordVoiceChannelLog log = csDiscordVoiceChannelLog.GetInstance();
-								response = log.ShowLastLog(commandSplit.Length >= 2 ? commandSplit[1] : "10");
-							}
-						}
-						break;
 					case "섹스":
 					case "sex":
 						{
@@ -199,7 +186,9 @@ namespace Console_Program_Control.Service
 				csAutoResponse auto = csAutoResponse.GetInstance();
 				if (string.IsNullOrEmpty(msg) || auto.isActive == false) return;
 
-				if (auto.getOutPut(msg, out string outPut))
+				msg = msg.Trim().ToUpper();
+
+				if (auto.tryGetOutPut(msg, out string outPut))
 				{
 					if (string.IsNullOrEmpty(outPut))
 					{
@@ -230,7 +219,23 @@ namespace Console_Program_Control.Service
 				}
 				else
 				{
-					auto.addInput(msg, out _);
+					if (lastVoiceInTime >= DateTime.Now || lastVoiceOutTime >= DateTime.Now)
+					{
+						if (lastVoiceInTime > lastVoiceOutTime)
+						{
+							string reason = string.Format("입장 : {0}", lastVoiceInName);
+							auto.tryAddInput(csAutoResponse.eAutoResponseSituationType.Hi, reason, msg, out _);
+						}
+						else
+						{
+							string reason = string.Format("퇴장 : {0}", lastVoiceInName);
+							auto.tryAddInput(csAutoResponse.eAutoResponseSituationType.Bye, reason, msg, out _);
+						}
+					}
+					else
+					{
+						auto.tryAddInput(csAutoResponse.eAutoResponseSituationType.None, "", msg, out _);
+					}
 				}
 			}
 		}

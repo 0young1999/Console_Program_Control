@@ -433,7 +433,7 @@ namespace Console_Program_Control.Service.Command
 					break;
 				case "CheckLoad":
 					{
-						if (csAutoResponse.GetInstance().checkLoad(out int use, out int total))
+						if (csAutoResponse.GetInstance().tryCheckLoad(out int use, out int total))
 						{
 							await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 							{
