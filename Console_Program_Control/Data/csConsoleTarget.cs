@@ -39,5 +39,9 @@ namespace Console_Program_Control.Data
 		[Description("해당 항목이 존재할 경우 프로세스 강제 종료가 아닌 아래 명령을 입력함으로서 종료 합니다.")]
 		[Category("종료")]
 		public List<string> KillCommand { get; set; }
+
+		[DisplayName("종료 명령시 같이 죽을 프로세스 이름")]
+		[Category("종료")]
+		public List<string> KillTogether { get; set; }
 	}
 }

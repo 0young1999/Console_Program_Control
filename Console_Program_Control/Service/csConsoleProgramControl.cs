@@ -118,6 +118,14 @@ namespace Console_Program_Control.Service
 				{
 					p.Kill(true);
 				}
+
+				foreach (string s in _ctc.getTarget().KillTogether)
+				{
+					Process[] ktps = Process.GetProcessesByName(s);
+
+					for (int i = 0; i < ktps.Length; i++) ktps[i].Kill();
+				}
+
 				process = null;
 			}
 		}

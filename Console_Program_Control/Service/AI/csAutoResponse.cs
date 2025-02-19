@@ -174,7 +174,7 @@ namespace Console_Program_Control.Service.AI
 			{
 				foreach (csAutoResponseData data in enable.datas)
 				{
-					if (data.input.Equals(input))
+					if (data.input.ToUpper().Equals(input))
 					{
 						output = data.output;
 						return true;
@@ -182,7 +182,7 @@ namespace Console_Program_Control.Service.AI
 				}
 				foreach (csAutoResponseData data in disable.datas)
 				{
-					if (data.input.Equals(input))
+					if (data.input.ToUpper().Equals(input))
 					{
 						csDiscord discord = csDiscord.GetInstance();
 
@@ -220,7 +220,7 @@ namespace Console_Program_Control.Service.AI
 
 						foreach (csAutoResponseData data in needCheck.datas)
 						{
-							if (data.input == input.ToUpper())
+							if (data.input.ToUpper() == input.ToUpper())
 							{
 								isActive = true;
 								data.reasons.Add(new csAutoResponseData.csAutoResponseReason() { type = type, reason = reason });

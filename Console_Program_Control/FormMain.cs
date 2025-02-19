@@ -1,6 +1,5 @@
 using Console_Program_Control.Data;
 using Console_Program_Control.Service;
-using Console_Program_Control.Service.AI;
 using GameSideProgramAutoStarter;
 using Young.Setting;
 
