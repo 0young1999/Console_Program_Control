@@ -19,6 +19,10 @@ namespace Console_Program_Control.Data
 		[DefaultValue("")]
 		public string ProgramPath { get; set; }
 
+		[DisplayName("게임 타입")]
+		[Category("기본")]
+		public GameType GameType { get; set; }
+
 		[DisplayName("서버 접속 방법")]
 		[Category("기본")]
 		public List<string> AccessData { get; set; } = new List<string>();
@@ -43,5 +47,11 @@ namespace Console_Program_Control.Data
 		[DisplayName("종료 명령시 같이 죽을 프로세스 이름")]
 		[Category("종료")]
 		public List<string> KillTogether { get; set; }
+	}
+
+	public enum GameType
+	{
+		None = 0,
+		Minecraft = 1,
 	}
 }

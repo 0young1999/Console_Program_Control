@@ -5,7 +5,6 @@ using Console_Program_Control.Service.AI;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using System;
 using System.Text;
 using Young;
 
@@ -462,6 +461,116 @@ namespace Console_Program_Control.Service.Command
 			csWikiParse.GetInstance().tryParseTodayPage(out string result);
 			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordCommandWikiParse, false, result);
 			await RespondAsync(result);
+		}
+
+		[SlashCommand("게임_플러그인", "게임 플러그인 실행")]
+		public async Task GamePlugin()
+		{
+			csConsoleTargetControl ctc = csConsoleTargetControl.GetInstance();
+
+			if (csConsoleProgramControl.GetInstance().isAlive() == false)
+			{
+				await RespondAsync("서버가 꺼져있어 명령 실행이 불가능해!");
+				return;
+			}
+
+			ulong uid = Context.User.Id;
+			string nickName = Context.Guild.GetUser(Context.User.Id)?.DisplayName ?? "UnKnown";
+
+			if (ctc.getTarget().GameType == GameType.Minecraft)
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine("게임 플러그인");
+
+				// 버튼 생성
+				var button = new ComponentBuilder()
+					.WithButton("텔레포트", "btnGamePluginMinecraft_TP", ButtonStyle.Secondary)
+					.WithButton("자살", "btnGamePluginMinecraft_KILL", ButtonStyle.Secondary);
+
+				// 버튼이 포함된 메시지 응답
+				await RespondAsync(sb.ToString(), components: button.Build());
+			}
+			// 사용 가능한 플러그인 없음
+			else
+			{
+				await RespondAsync("사용 가능한 플러그인이 존재하지 않습니다.");
+			}
+		}
+
+		[ComponentInteraction("btnGamePluginMinecraft_*")]
+		public async Task Button_GamePlugInMinecraft(string dynamicData)
+		{
+			csConsoleTargetControl ctc = csConsoleTargetControl.GetInstance();
+			csConsoleProgramControl cpc = csConsoleProgramControl.GetInstance();
+			if (ctc.getTarget().GameType != GameType.Minecraft)
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "서버 타입이 변경됬서";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+			if (cpc.isAlive() == false)
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "서버가 꺼져서 명령을 실행할수 없서";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+
+			csUserProfile up = csUserProfile.GetInstance();
+
+			csUserProfileData request;
+			lock (up.LockDatas)
+			{
+				request = up.datas.Where(item => item.uid == Context.User.Id).First();
+			}
+
+			if (request == null || string.IsNullOrEmpty(request.MinecraftName))
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "유저 정보를 가져올수 없서 명령 실행이 불가능해";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+
+			switch (dynamicData)
+			{
+				case "TP":
+					csUserProfileData[] upds;
+
+					lock (up.LockDatas)
+					{
+						upds = up.datas.Where(item => string.IsNullOrEmpty(item.MinecraftName) == false && item.uid != request.uid).ToArray();
+					}
+
+					List<SelectMenuOptionBuilder> lSMB = new List<SelectMenuOptionBuilder>();
+
+					for (int i = 0; i < upds.Length; i++)
+					{
+						lSMB.Add(new SelectMenuOptionBuilder()
+							.WithLabel(upds[i].nick)
+							.WithValue(string.Format("{0}|{1}", request.MinecraftName, upds[i].MinecraftName)));
+					}
+
+					var components = new ComponentBuilder().WithSelectMenu("Select_Menu_PlugIn_Minecraft", lSMB).Build();
+
+					await RespondAsync("TP 가능 대상", components: components);
+					break;
+				case "KILL":
+					bool isPass = cpc.process_WriteMSG($"KILL {request.MinecraftName}");
+					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+					{
+						msg.Content = isPass ? "실행 성공" : "실행 실패";
+						msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+					});
+					break;
+			}
 		}
 	}
 }

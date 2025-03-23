@@ -129,6 +129,22 @@ namespace Console_Program_Control.Service
 			if (message.Author.IsBot)
 				return;
 
+			// 유저 프로필 생성 여부 검사
+			csUserProfile up = csUserProfile.GetInstance();
+
+			lock (up.LockDatas)
+			{
+				if (!up.datas.Any(item => item.uid == (message.Author as SocketGuildUser).Id))
+				{
+					up.datas.Add(new csUserProfileData()
+					{
+						nick = (message.Author as SocketGuildUser).DisplayName,
+						uid = (message.Author as SocketGuildUser).Id
+					});
+					up.Save();
+				}
+			}
+
 			string msg = arg.Content;
 			if (msg.IndexOf(setting.CommandSTX) == 0)
 			{
@@ -163,6 +179,31 @@ namespace Console_Program_Control.Service
 					case "sex":
 						{
 							response = "님 혹시 기계 박이?";
+						}
+						break;
+					case "유저등록":
+						{
+							if (ulong.TryParse(commandSplit[0], out ulong targetUid) == false)
+							{
+								response = "UID 파싱 실패";
+								break;
+							}
+
+							bool isProccessDone = false;
+
+							lock (up.LockDatas)
+							{
+								for (int i = 0; i < up.datas.Count; i++)
+								{
+									if (up.datas[i].uid == targetUid)
+									{
+										up.datas[i].MinecraftName = commandSplit[1];
+										isProccessDone = true;
+									}
+								}
+							}
+
+							response = isProccessDone ? "등록 성공" : "등록 실패\n해당 유저 데이터를 찾을수 없서";
 						}
 						break;
 					default:
@@ -278,6 +319,25 @@ namespace Console_Program_Control.Service
 
 						_ctc.Save();
 					}
+				}
+				else if (messageComponent.Data.CustomId == "Select_Menu_PlugIn_Minecraft")
+				{
+					var values = messageComponent.Data.Values.First().Split("|");
+
+					if (_ctc.getTarget().GameType != GameType.Minecraft)
+					{
+						await messageComponent.RespondAsync("서버가 마인크래프트 서버가 아니야");
+						return;
+					}
+
+					if (control.isAlive() == false)
+					{
+						await messageComponent.RespondAsync("서버가 살아있는 상태가 아니야");
+						return;
+					}
+
+					bool isPass = control.process_WriteMSG($"TP {values[0]} {values[1]}");
+					await messageComponent.RespondAsync(isPass ? "텔레포트 성공" : "텔레포트 실패");
 				}
 			}
 		}
