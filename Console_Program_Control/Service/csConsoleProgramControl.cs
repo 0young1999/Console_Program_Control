@@ -1,6 +1,8 @@
 ﻿using Console_Program_Control.Data;
 using Discord.Commands;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Console_Program_Control.Service
@@ -36,6 +38,11 @@ namespace Console_Program_Control.Service
 				psi.RedirectStandardInput = true;
 				psi.CreateNoWindow = false;
 
+				if (string.IsNullOrEmpty(_ctc.getTarget().StartOption) == false)
+				{
+					psi.Arguments = _ctc.getTarget().StartOption;
+				}
+
 				process = Process.Start(psi);
 				if (process == null) return false;
 				writer = process.StandardInput;
@@ -51,8 +58,50 @@ namespace Console_Program_Control.Service
 			{
 				try
 				{
-					writer.WriteLine(msg);
-					return true;
+					// 텔넷
+					if (_ctc.getTarget().GameType == GameType._7DaysToDie)
+					{
+						// Telnet 서버 정보
+						string server = "127.0.0.1";            // 서버 IP
+						int port = 8081;                        // Telnet 포트
+						string password = "20250704";   // Telnet 비밀번호
+
+						using (TcpClient client = new TcpClient())
+						{
+							//Console.WriteLine("서버에 연결 중...");
+							client.Connect(server, port);
+
+							using (NetworkStream stream = client.GetStream())
+							using (StreamReader reader = new StreamReader(stream, Encoding.ASCII))
+							using (StreamWriter writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
+							{
+								// 초기 연결 메시지 읽기
+								string line = reader.ReadLine();
+								Console.WriteLine(line);
+
+								// 비밀번호 전송
+								writer.WriteLine(password);
+
+								// 인증 결과 읽기
+								line = reader.ReadLine();
+								Console.WriteLine(line);
+
+								// 단발성 명령어 전송
+								writer.WriteLine(msg);
+
+								Thread.Sleep(1000);
+
+								Console.WriteLine("명령 전송 완료. 연결 종료.");
+								return true;
+							}
+						}
+					}
+					// 기본 타입
+					else
+					{
+						writer.WriteLine(msg);
+						return true;
+					}
 				}
 				catch { }
 			}

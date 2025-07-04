@@ -204,7 +204,6 @@ namespace Console_Program_Control.Service.Command
 		[SlashCommand("서버목록", "관리 중인 게임서버 리스트를 출력합니다.")]
 		public async Task AsyncServerList()
 		{
-			csConsoleProgramControl control = csConsoleProgramControl.GetInstance();
 			csConsoleTargetControl _ctc = csConsoleTargetControl.GetInstance();
 
 			LastRequestServerChangeBoxIndex = DateTime.Now.Ticks.ToString();
@@ -234,7 +233,6 @@ namespace Console_Program_Control.Service.Command
 		[SlashCommand("서버접속방법", "관리 중인 게임서버의 접속 방법을 출력합니다.")]
 		public async Task AsyncServerAccess()
 		{
-			csConsoleProgramControl control = csConsoleProgramControl.GetInstance();
 			csConsoleTargetControl _ctc = csConsoleTargetControl.GetInstance();
 
 			StringBuilder sb = new StringBuilder();
@@ -484,8 +482,8 @@ namespace Console_Program_Control.Service.Command
 
 				// 버튼 생성
 				var button = new ComponentBuilder()
-					.WithButton("텔레포트", "btnGamePluginMinecraft_TP", ButtonStyle.Secondary)
-					.WithButton("자살", "btnGamePluginMinecraft_KILL", ButtonStyle.Secondary);
+					.WithButton("사람에게 텔레포트", $"btnGamePluginMinecraft_TP_{uid}", ButtonStyle.Secondary)
+					.WithButton("자살", $"btnGamePluginMinecraft_KILL_{uid}", ButtonStyle.Secondary);
 
 				// 버튼이 포함된 메시지 응답
 				await RespondAsync(sb.ToString(), components: button.Build());
@@ -521,6 +519,14 @@ namespace Console_Program_Control.Service.Command
 				return;
 			}
 
+			string[] splits = dynamicData.Split('_');
+
+			if (Context.User.Id.ToString() != splits[1])
+			{
+				await RespondAsync($"{(Context.User as SocketGuildUser).DisplayName} 당신 게임이 아닐 건데?");
+				return;
+			}
+
 			csUserProfile up = csUserProfile.GetInstance();
 
 			csUserProfileData request;
@@ -539,7 +545,7 @@ namespace Console_Program_Control.Service.Command
 				return;
 			}
 
-			switch (dynamicData)
+			switch (splits[0])
 			{
 				case "TP":
 					csUserProfileData[] upds;
@@ -555,7 +561,7 @@ namespace Console_Program_Control.Service.Command
 					{
 						lSMB.Add(new SelectMenuOptionBuilder()
 							.WithLabel(upds[i].nick)
-							.WithValue(string.Format("{0}|{1}", request.MinecraftName, upds[i].MinecraftName)));
+							.WithValue($"{request.MinecraftName}|{upds[i].MinecraftName}|{Context.User.Id.ToString()}"));
 					}
 
 					var components = new ComponentBuilder().WithSelectMenu("Select_Menu_PlugIn_Minecraft", lSMB).Build();
@@ -563,10 +569,10 @@ namespace Console_Program_Control.Service.Command
 					await RespondAsync("TP 가능 대상", components: components);
 					break;
 				case "KILL":
-					bool isPass = cpc.process_WriteMSG($"KILL {request.MinecraftName}");
+					bool isPass = cpc.process_WriteMSG($"kill {request.MinecraftName}");
 					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 					{
-						msg.Content = isPass ? "실행 성공" : "실행 실패";
+						msg.Content = isPass ? $"{(Context.User as SocketGuildUser).DisplayName}님이 자살 했서" : $"{(Context.User as SocketGuildUser).DisplayName}님의 자살이 실패 했서";
 						msg.Components = new ComponentBuilder().Build(); // 버튼 제거
 					});
 					break;

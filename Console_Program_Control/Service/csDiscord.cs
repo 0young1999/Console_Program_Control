@@ -183,7 +183,13 @@ namespace Console_Program_Control.Service
 						break;
 					case "유저등록":
 						{
-							if (ulong.TryParse(commandSplit[0], out ulong targetUid) == false)
+							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
+							{
+								response = "지능 미달";
+								break;
+							}
+
+							if (ulong.TryParse(commandSplit[1], out ulong targetUid) == false)
 							{
 								response = "UID 파싱 실패";
 								break;
@@ -197,13 +203,15 @@ namespace Console_Program_Control.Service
 								{
 									if (up.datas[i].uid == targetUid)
 									{
-										up.datas[i].MinecraftName = commandSplit[1];
+										up.datas[i].MinecraftName = commandSplit[2];
 										isProccessDone = true;
 									}
 								}
 							}
 
 							response = isProccessDone ? "등록 성공" : "등록 실패\n해당 유저 데이터를 찾을수 없서";
+
+							if (isProccessDone) up.Save();
 						}
 						break;
 					default:
@@ -324,6 +332,12 @@ namespace Console_Program_Control.Service
 				{
 					var values = messageComponent.Data.Values.First().Split("|");
 
+					if (arg.User.Id.ToString() != values[2])
+					{
+						await messageComponent.RespondAsync("당신이 실행한 명령이 아닐텐대?");
+						return;
+					}
+
 					if (_ctc.getTarget().GameType != GameType.Minecraft)
 					{
 						await messageComponent.RespondAsync("서버가 마인크래프트 서버가 아니야");
@@ -336,7 +350,7 @@ namespace Console_Program_Control.Service
 						return;
 					}
 
-					bool isPass = control.process_WriteMSG($"TP {values[0]} {values[1]}");
+					bool isPass = control.process_WriteMSG($"tp {values[0]} {values[1]}");
 					await messageComponent.RespondAsync(isPass ? "텔레포트 성공" : "텔레포트 실패");
 				}
 			}

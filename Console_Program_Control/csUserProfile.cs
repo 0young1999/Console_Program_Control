@@ -21,7 +21,7 @@ namespace Console_Program_Control
 	}
 
 	[Serializable]
-	public class csUserProfileData
+	public class csUserProfileData : csAutoSaveLoad
 	{
 		public ulong uid { get; set; }
 		public string nick { get; set; }

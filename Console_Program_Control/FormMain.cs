@@ -26,7 +26,7 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += string.Format("({0})", "2024-12-18 23:58");
+			Text += "2025-07-05 PM 12:09";
 		}
 
 		private void tmTime_Tick(object sender, EventArgs e)

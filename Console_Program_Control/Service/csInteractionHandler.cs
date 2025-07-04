@@ -33,7 +33,6 @@ namespace Console_Program_Control.Service
 		private async Task OnReadyAsync()
 		{
 			await _interactionService.RegisterCommandsGloballyAsync(); // 전역 명령어 등록
-			//Console.WriteLine("Slash commands registered globally.");
 		}
 
 		private async Task HandleInteractionAsync(SocketInteraction interaction)

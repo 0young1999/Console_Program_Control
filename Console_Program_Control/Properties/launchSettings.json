@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Console_Program_Control": {
+      "commandName": "Project",
+      "workingDirectory": "\\\\DESKTOP-D9OCFM4\\Server\\CPC\\x64\\Debug\\net8.0-windows",
+      "remoteDebugEnabled": true,
+      "remoteDebugMachine": "DESKTOP-D9OCFM4:4026",
+      "authenticationMode": "None"
+    }
+  }
+}

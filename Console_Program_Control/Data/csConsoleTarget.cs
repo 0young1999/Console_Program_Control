@@ -19,6 +19,11 @@ namespace Console_Program_Control.Data
 		[DefaultValue("")]
 		public string ProgramPath { get; set; }
 
+		[DisplayName("시작 옵션")]
+		[Category("기본")]
+		[DefaultValue("")]
+		public string StartOption { get; set; }
+
 		[DisplayName("게임 타입")]
 		[Category("기본")]
 		public GameType GameType { get; set; }
@@ -53,5 +58,6 @@ namespace Console_Program_Control.Data
 	{
 		None = 0,
 		Minecraft = 1,
+		_7DaysToDie = 2,
 	}
 }
