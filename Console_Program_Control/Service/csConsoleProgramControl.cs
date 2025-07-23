@@ -1,8 +1,11 @@
 ﻿using Console_Program_Control.Data;
+using CoreRCON;
 using Discord.Commands;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Console_Program_Control.Service
@@ -91,10 +94,13 @@ namespace Console_Program_Control.Service
 
 								Thread.Sleep(1000);
 
-								Console.WriteLine("명령 전송 완료. 연결 종료.");
 								return true;
 							}
 						}
+					}
+					else if (_ctc.getTarget().GameType == GameType.Left4Dead2)
+					{
+						RCONAsync("192.168.0.12", 27015, "ThePigeonThatLostItsFear", msg);
 					}
 					// 기본 타입
 					else
@@ -106,6 +112,23 @@ namespace Console_Program_Control.Service
 				catch { }
 			}
 			return false;
+		}
+
+		//private async Task RCON(string ip, int port, string password, string msg)
+		private async Task RCONAsync(string ip, int port, string password, string msg)
+		{
+			// 서버 IP와 포트
+			var endpoint = new IPEndPoint(IPAddress.Parse(ip), port);
+
+			// RCON 연결
+			using (var rcon = new RCON(endpoint, password))
+			{
+				// 연결 시도
+				await rcon.ConnectAsync();
+
+				// RCON 명령 실행
+				string result = await rcon.SendCommandAsync(msg);
+			}
 		}
 
 		public bool isAlive()

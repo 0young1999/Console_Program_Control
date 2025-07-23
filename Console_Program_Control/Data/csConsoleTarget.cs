@@ -59,5 +59,6 @@ namespace Console_Program_Control.Data
 		None = 0,
 		Minecraft = 1,
 		_7DaysToDie = 2,
+		Left4Dead2 = 3,
 	}
 }
