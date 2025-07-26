@@ -21,12 +21,13 @@ namespace Console_Program_Control
 		}
 
 		private csDiscord _discord;
+		private csLeft4Dead2Plugins _l4d2Plugins;
 
 		private void FormMain_Load(object sender, EventArgs e)
 		{
 			tmTime.Enabled = true;
 
-			Text += "2025-07-14 PM 21:29";
+			Text += "2025-07-26 AM 11:55";
 		}
 
 		private void tmTime_Tick(object sender, EventArgs e)
@@ -35,6 +36,12 @@ namespace Console_Program_Control
 			if (_discord == null)
 			{
 				_discord = csDiscord.GetInstance();
+			}
+
+			// 프로그램 시작시 레포데 플러그인 접근 시작
+			if (_l4d2Plugins == null)
+			{
+				_l4d2Plugins = csLeft4Dead2Plugins.GetInstance();
 			}
 
 			// 시간 갱신
@@ -177,5 +184,6 @@ namespace Console_Program_Control
 		DiscordVoiceChatLog = 4,
 		DiscordSendCommandConsoleServer = 5,
 		DiscordCommandWikiParse = 6,
+		Left4Dead2Plugins = 7,
 	}
 }

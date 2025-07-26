@@ -65,14 +65,14 @@ namespace Console_Program_Control.Service
 					if (_ctc.getTarget().GameType == GameType._7DaysToDie)
 					{
 						// Telnet 서버 정보
-						string server = "127.0.0.1";            // 서버 IP
-						int port = 8081;                        // Telnet 포트
-						string password = "20250704";   // Telnet 비밀번호
+						//string server = "127.0.0.1";            // 서버 IP
+						//int port = 8081;                        // Telnet 포트
+						//string password = "20250704";   // Telnet 비밀번호
 
 						using (TcpClient client = new TcpClient())
 						{
 							//Console.WriteLine("서버에 연결 중...");
-							client.Connect(server, port);
+							client.Connect(_ctc.getTarget().ControlIP, _ctc.getTarget().ControlPort);
 
 							using (NetworkStream stream = client.GetStream())
 							using (StreamReader reader = new StreamReader(stream, Encoding.ASCII))
@@ -83,7 +83,7 @@ namespace Console_Program_Control.Service
 								Console.WriteLine(line);
 
 								// 비밀번호 전송
-								writer.WriteLine(password);
+								writer.WriteLine(_ctc.getTarget().ControlPW);
 
 								// 인증 결과 읽기
 								line = reader.ReadLine();
@@ -100,7 +100,8 @@ namespace Console_Program_Control.Service
 					}
 					else if (_ctc.getTarget().GameType == GameType.Left4Dead2)
 					{
-						RCONAsync("192.168.0.12", 27015, "ThePigeonThatLostItsFear", msg);
+						//RCONAsync("192.168.0.12", 27015, "ThePigeonThatLostItsFear", msg);
+						RCONAsync(_ctc.getTarget().ControlIP, _ctc.getTarget().ControlPort, _ctc.getTarget().ControlPW, msg);
 					}
 					// 기본 타입
 					else

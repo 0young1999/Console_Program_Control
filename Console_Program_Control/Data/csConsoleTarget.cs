@@ -32,6 +32,18 @@ namespace Console_Program_Control.Data
 		[Category("기본")]
 		public List<string> AccessData { get; set; } = new List<string>();
 
+		[DisplayName("원격 접속 IP")]
+		[Category("원격")]
+		public string ControlIP { get; set; }
+
+		[DisplayName("원격 접속 PORT")]
+		[Category("원격")]
+		public int ControlPort { get; set; }
+
+		[DisplayName("원격 접속 비밀번호")]
+		[Category("원격")]
+		public string ControlPW { get; set; }
+
 		[DisplayName("강제종료 사용")]
 		[Description("강제종료를 허용할것인지 설정합니다.")]
 		[Category("종료")]

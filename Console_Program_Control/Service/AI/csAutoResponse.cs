@@ -110,6 +110,7 @@ namespace Console_Program_Control.Service.AI
 			private csAutoResponseEnable()
 			{
 				AutoSavePath = "Data\\AI\\EnableData.xml";
+				IsNeedBackup = false;
 				Load();
 			}
 			~csAutoResponseEnable()
@@ -132,6 +133,7 @@ namespace Console_Program_Control.Service.AI
 			private csAutoResponseDisable()
 			{
 				AutoSavePath = "Data\\AI\\DisableData.xml";
+				IsNeedBackup = false;
 				Load();
 			}
 			~csAutoResponseDisable()
@@ -154,6 +156,7 @@ namespace Console_Program_Control.Service.AI
 			private csAutoResponseNeedCheck()
 			{
 				AutoSavePath = "Data\\AI\\NeedCheckData.xml";
+				IsNeedBackup = false;
 				Load();
 			}
 			~csAutoResponseNeedCheck()
