@@ -21,6 +21,8 @@ namespace Console_Program_Control.Data
 			threadServerConnect.Start();
 		}
 
+		TcpClient tcpClient;
+		NetworkStream stream;
 		private string LastError = string.Empty;
 
 		private Thread threadServerConnect;
@@ -28,7 +30,7 @@ namespace Console_Program_Control.Data
 		private void ServerConnect()
 		{
 			FormMain main = FormMain.GetInstance();
-			TcpClient tcpClient = new TcpClient();
+			tcpClient = new TcpClient();
 			main.MainLogAppend(eMainLogType.Left4Dead2Plugins, true, "서버 접속 대기 중...");
 			while (true)
 			{
@@ -37,7 +39,7 @@ namespace Console_Program_Control.Data
 					tcpClient.Connect("127.0.0.1", 27020);
 					main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, "서버 연결 완료!!!");
 
-					NetworkStream stream = tcpClient.GetStream();
+					stream = tcpClient.GetStream();
 					stream.ReadTimeout = 100;
 					string ReceivedStack = string.Empty;
 
@@ -122,13 +124,14 @@ namespace Console_Program_Control.Data
 		private void PlayerConnectionStatus(string command)
 		{
 			FormMain main = FormMain.GetInstance();
-			if (command.Split("|").Length == 3)
+			if (command.Split("|").Length == 4)
 			{
 				string[] splits = command.Split("|");
 				string steamID64 = splits[1];
-				string steamName = splits[2];
+				string steamID = splits[2];
+				string steamName = splits[3];
 
-				string appendString = $"[{DateTime.Now.ToString("dd-HH-mm-ss")}]{steamID64}|{steamName}\n";
+				string appendString = $"[{DateTime.Now.ToString("dd-HH-mm-ss")}]{steamID64}|{steamID}|{steamName}\n";
 
 				lock (Lock_ID_Name_Matching)
 				{

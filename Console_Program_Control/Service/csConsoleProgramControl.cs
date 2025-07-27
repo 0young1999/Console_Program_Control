@@ -102,6 +102,7 @@ namespace Console_Program_Control.Service
 					{
 						//RCONAsync("192.168.0.12", 27015, "ThePigeonThatLostItsFear", msg);
 						RCONAsync(_ctc.getTarget().ControlIP, _ctc.getTarget().ControlPort, _ctc.getTarget().ControlPW, msg);
+						return true;
 					}
 					// 기본 타입
 					else
