@@ -111,8 +111,13 @@ namespace Console_Program_Control.Service
 			{
 				data.EventType = EDiscordVoiceChannelLog.이동;
 			}
+			// 유저의 보이스 채널 상태가 변경될때
+			else if (before.VoiceChannel == after.VoiceChannel)
+			{
+				data.EventType = EDiscordVoiceChannelLog.상태변경;
+			}
 
-			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordVoiceChatLog, true, data.ToString());
+				FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordVoiceChatLog, true, data.ToString());
 			log.AppendLog(data);
 		}
 
@@ -143,6 +148,18 @@ namespace Console_Program_Control.Service
 					});
 					up.Save();
 				}
+
+				try
+				{
+					int findIndex = up.datas.FindIndex(item => item.uid == (message.Author as SocketGuildUser).Id);
+
+					if (findIndex != -1 && up.datas[findIndex].nick != (message.Author as SocketGuildUser).DisplayName)
+					{
+						up.datas[findIndex].nick = (message.Author as SocketGuildUser).DisplayName;
+						up.Save();
+					}
+				}
+				catch { }
 			}
 
 			string msg = arg.Content;
@@ -181,11 +198,17 @@ namespace Console_Program_Control.Service
 							response = "님 혹시 기계 박이?";
 						}
 						break;
-					case "유저등록":
+					case "유저등록_minecreaft":
 						{
 							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
 							{
-								response = "지능 미달";
+								response = "사용 불가";
+								break;
+							}
+
+							if (commandSplit.Length != 3)
+							{
+								response = "파라메터 부족";
 								break;
 							}
 
@@ -205,6 +228,7 @@ namespace Console_Program_Control.Service
 									{
 										up.datas[i].MinecraftName = commandSplit[2];
 										isProccessDone = true;
+										break;
 									}
 								}
 							}
@@ -214,6 +238,55 @@ namespace Console_Program_Control.Service
 							if (isProccessDone) up.Save();
 						}
 						break;
+					case "유저등록_steamid":
+						{
+							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
+							{
+								response = "사용 불가";
+								break;
+							}
+
+							if (commandSplit.Length != 4)
+							{
+								response = "파라메터 부족";
+								break;
+							}
+
+							if (ulong.TryParse(commandSplit[1], out ulong targetUid) == false)
+							{
+								response = "UID 파싱 실패";
+								break;
+							}
+
+							bool isProccessDone = false;
+
+							lock (up.LockDatas)
+							{
+								for (int i = 0; i < up.datas.Count; i++)
+								{
+									if (up.datas[i].uid == targetUid)
+									{
+										up.datas[i].SteamID = commandSplit[2];
+										up.datas[i].SteamID64 = commandSplit[3];
+										isProccessDone = true;
+										break;
+									}
+								}
+							}
+
+							response = isProccessDone ? "등록 성공" : "등록 실패\n해당 유저 데이터를 찾을수 없서";
+
+							if (isProccessDone) up.Save();
+						}
+						break;
+					case "help":
+						{
+							StringBuilder sb = new StringBuilder();
+							sb.AppendLine("유저등록_Minecreaft [DISCORD UID] [MINECREAFT NAME]");
+							sb.AppendLine("유저등록_SteamID [DISCORD UID] [STEAMID] [STEAMID64]");
+							response = sb.ToString();
+							break;
+						}
 					default:
 						return;
 				}

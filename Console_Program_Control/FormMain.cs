@@ -27,7 +27,7 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += "2025-07-27 AM 00:21";
+			Text += "2025-07-28 PM 11:10";
 		}
 
 		private void tmTime_Tick(object sender, EventArgs e)

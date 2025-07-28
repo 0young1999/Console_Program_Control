@@ -26,5 +26,7 @@ namespace Console_Program_Control
 		public ulong uid { get; set; }
 		public string nick { get; set; }
 		public string MinecraftName { get; set; }
+		public string SteamID { get; set; }
+		public string SteamID64 { get; set; }
 	}
 }

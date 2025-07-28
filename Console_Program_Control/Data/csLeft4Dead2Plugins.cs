@@ -1,4 +1,7 @@
-﻿using System.Net.Sockets;
+﻿using Console_Program_Control.HIDE.CODE;
+using MySql.Data.MySqlClient;
+using System.Data;
+using System.Net.Sockets;
 using System.Text;
 using Young.Setting;
 
@@ -19,6 +22,10 @@ namespace Console_Program_Control.Data
 			threadServerConnect = new Thread(ServerConnect);
 			threadServerConnect.IsBackground = true;
 			threadServerConnect.Start();
+
+			threadDBBackup = new Thread(DBBackupData);
+			threadDBBackup.IsBackground = true;
+			threadDBBackup.Start();
 		}
 
 		TcpClient tcpClient;
@@ -111,11 +118,8 @@ namespace Console_Program_Control.Data
 				}
 				finally
 				{
-					if (tcpClient.Connected)
-					{
-						tcpClient.Dispose();
-						tcpClient = new TcpClient();
-					}
+					tcpClient.Dispose();
+					tcpClient = new TcpClient();
 				}
 			}
 		}
@@ -135,12 +139,8 @@ namespace Console_Program_Control.Data
 
 				lock (Lock_ID_Name_Matching)
 				{
-					string path = "LEFT4DEAD";
-
-					if (Directory.Exists(path) == false)
-					{
-						Directory.CreateDirectory(path);
-					}
+					string path = $"LEFT4DEAD\\ID_Name_Matching";
+					Directory.CreateDirectory(path);
 
 					path += $"\\ID_Name_Matching_{DateTime.Now.ToString("yyyyMM")}.log";
 
@@ -153,5 +153,142 @@ namespace Console_Program_Control.Data
 			}
 		}
 
+		private static object LockDBCommunication = new object();
+		private Thread threadDBBackup;
+		private void DBBackupData()
+		{
+			// 혹시 모를 상황을 대비해 최소값으로 하여 프로그램 시작시 항상 백업 뜨도록
+			DateTime lastTime = DateTime.MinValue;
+
+			while (true)
+			{
+				// 날짜가 변경되었을때
+				if (DateTime.Now.ToString("yyyy MM dd").Equals(lastTime.ToString("yyyy MM dd")) == false)
+				{
+					lock (LockDBCommunication)
+					{
+						try
+						{
+							string constring = $"Server={csPrivateCode.LEFT4DEAD2DBServer};" +
+								$"Port={csPrivateCode.LEFT4DEAD2DBPort};" +
+								$"Database={csPrivateCode.LEFT4DEAD2DB};" +
+								$"Uid={csPrivateCode.LEFT4DEAD2ID};" +
+								$"Pwd={csPrivateCode.LEFT4DEAD2PW};";
+
+							using (MySqlConnection conn = new MySqlConnection(constring))
+							{
+								conn.Open();
+
+								string sqlText = "SELECT * FROM user_info";
+								using (MySqlDataAdapter adapter = new MySqlDataAdapter(sqlText, conn))
+								{
+									DataSet dsResult = new DataSet();
+									adapter.Fill(dsResult);
+
+									string backupDir = Path.Combine("LEFT4DEAD", "DB_BACKUP", "user_info", DateTime.Now.ToString("yyyy"));
+									Directory.CreateDirectory(backupDir);
+
+									string backupFile = Path.Combine(backupDir, DateTime.Now.ToString("MM-dd-HH-mm-ss") + ".xml");
+									dsResult.WriteXml(backupFile);
+
+									/*
+									 DataRow row = dsResult.Tables[0].AsEnumerable()
+										.FirstOrDefault(r => r.Field<string>("steam_id") == "76561199018715799");
+
+									if (row != null)
+									{
+										int rank = row.Field<int>("rank");
+										Console.WriteLine($"Rank: {rank}");
+									}
+									 */
+								}
+
+								lastTime = DateTime.Now;
+							}
+						}
+						catch (Exception e)
+						{
+							FormMain.GetInstance().MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"[DB]{e}");
+						}
+					}
+				}
+
+				// 1분마다
+				Thread.Sleep(60000);
+			}
+		}
+		public string GetProfile(csUserProfileData up)
+		{
+			string response = string.Empty;
+
+			if (string.IsNullOrEmpty(up.SteamID64))
+			{
+				response = "당신의 스팀 ID가 등록 되지 않았습니다.";
+				return response;
+			}
+
+			lock (LockDBCommunication)
+			{
+				try
+				{
+					string constring = $"Server={csPrivateCode.LEFT4DEAD2DBServer};" +
+						$"Port={csPrivateCode.LEFT4DEAD2DBPort};" +
+						$"Database={csPrivateCode.LEFT4DEAD2DB};" +
+						$"Uid={csPrivateCode.LEFT4DEAD2ID};" +
+						$"Pwd={csPrivateCode.LEFT4DEAD2PW};";
+
+					using (MySqlConnection conn = new MySqlConnection(constring))
+					{
+						conn.Open();
+
+						string sqlText = "SELECT * FROM user_info";
+						using (MySqlDataAdapter adapter = new MySqlDataAdapter(sqlText, conn))
+						{
+							DataSet dsResult = new DataSet();
+							adapter.Fill(dsResult);
+
+
+							DataRow row = dsResult.Tables[0].AsEnumerable()
+							   .FirstOrDefault(r => r.Field<string>("steam_id") == up.SteamID64);
+
+							if (row != null)
+							{
+								int iRank = row.Field<byte>("rank");
+								int iLevel = row.Field<byte>("level");
+								uint iStr = row.Field<uint>("str");
+								uint iAgi = row.Field<uint>("agi");
+								uint iCon = row.Field<uint>("con");
+								uint iInt = row.Field<uint>("int");
+								uint iPoint = row.Field<uint>("point");
+								uint iJump = row.Field<uint>("jump");
+								uint iExp = row.Field<uint>("exp");
+
+								response =
+									$"[{up.nick}]님의 LEFT 4 DEAD 2 프로필\n" +
+									$"RANK : {iRank} | LEVEL : {iLevel}\n" +
+									$"힘 : {iStr}\n" +
+									$"민첩 : {iAgi}\n" +
+									$"체력 : {iCon}\n" +
+									$"지능 : {iInt}\n" +
+									$"점프 : {iJump}\n" +
+									$"잔여 포인트 : {iPoint} | 경험치 : {iExp}";
+							}
+							else
+							{
+								response = $"[{up.nick}]님의 LEFT 4 DEAD 2 프로필\n" +
+									$"놀라울 정도로 비어있음";
+							}
+						}
+					}
+				}
+				catch (Exception e)
+				{
+					FormMain.GetInstance().MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"[DB GetProfile]{e}");
+					response = $"[DB GetProfile]{e}";
+				}
+			}
+
+			return response;
+		}
 	}
 }

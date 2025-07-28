@@ -488,6 +488,18 @@ namespace Console_Program_Control.Service.Command
 				// 버튼이 포함된 메시지 응답
 				await RespondAsync(sb.ToString(), components: button.Build());
 			}
+			else if (ctc.getTarget().GameType == GameType.Left4Dead2)
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine("게임 플러그인");
+
+				// 버튼 생성
+				var button = new ComponentBuilder()
+					.WithButton("내 프로필 보기", $"btnGamePluginLeft4Dead2_MyProfile_{uid}", ButtonStyle.Secondary);
+
+				// 버튼이 포함된 메시지 응답
+				await RespondAsync(sb.ToString(), components: button.Build());
+			}
 			// 사용 가능한 플러그인 없음
 			else
 			{
@@ -523,7 +535,7 @@ namespace Console_Program_Control.Service.Command
 
 			if (Context.User.Id.ToString() != splits[1])
 			{
-				await RespondAsync($"{(Context.User as SocketGuildUser).DisplayName} 당신 게임이 아닐 건데?");
+				await RespondAsync($"{(Context.User as SocketGuildUser).DisplayName} 당신 명령이 아닐 건데?");
 				return;
 			}
 
@@ -573,6 +585,69 @@ namespace Console_Program_Control.Service.Command
 					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 					{
 						msg.Content = isPass ? $"{(Context.User as SocketGuildUser).DisplayName}님이 자살 했서" : $"{(Context.User as SocketGuildUser).DisplayName}님의 자살이 실패 했서";
+						msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+					});
+					break;
+			}
+		}
+
+		[ComponentInteraction("btnGamePluginLeft4Dead2_*")]
+		public async Task Button_GamePlugInLeft4Dead2(string dynamicData)
+		{
+			csConsoleTargetControl ctc = csConsoleTargetControl.GetInstance();
+			csConsoleProgramControl cpc = csConsoleProgramControl.GetInstance();
+			if (ctc.getTarget().GameType != GameType.Left4Dead2)
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "서버 타입이 변경됬서";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+			if (cpc.isAlive() == false)
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "서버가 꺼져서 명령을 실행할수 없서";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+
+			string[] splits = dynamicData.Split('_');
+
+			if (Context.User.Id.ToString() != splits[1])
+			{
+				await RespondAsync($"{(Context.User as SocketGuildUser).DisplayName} 당신 명령이 아닐 건데?");
+				return;
+			}
+
+			csUserProfile up = csUserProfile.GetInstance();
+
+			csUserProfileData request;
+			lock (up.LockDatas)
+			{
+				request = up.datas.Where(item => item.uid == Context.User.Id).First();
+			}
+
+			if (request == null || string.IsNullOrEmpty(request.SteamID64))
+			{
+				await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+				{
+					msg.Content = "유저 정보를 가져올수 없서 명령 실행이 불가능해";
+					msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+				});
+				return;
+			}
+
+			switch (splits[0])
+			{
+				case "MyProfile":
+					string response = csLeft4Dead2Plugins.GetInstance().GetProfile(request);
+					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+					{
+						msg.Content = response;
 						msg.Components = new ComponentBuilder().Build(); // 버튼 제거
 					});
 					break;
