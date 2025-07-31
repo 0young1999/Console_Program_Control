@@ -644,7 +644,8 @@ namespace Console_Program_Control.Service.Command
 			switch (splits[0])
 			{
 				case "MyProfile":
-					string response = csLeft4Dead2Plugins.GetInstance().GetProfile(request);
+					string response;
+					lock (up.LockDatas) { response = csLeft4Dead2Plugins.GetInstance().GetProfile(request); }
 					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 					{
 						msg.Content = response;
