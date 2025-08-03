@@ -27,7 +27,7 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += "(2025-08-01 AM 00:11)";
+			Text += "(2025-08-03 AM 11:39)";
 		}
 
 		private DateTime dtLastUserDataBackup = DateTime.MinValue;
@@ -125,6 +125,7 @@ namespace Console_Program_Control
 			sf = new SettingForm();
 			sf._SetObject(csDiscordSetting.GetInstance(), "디스코드");
 			sf._SetObject(csConsoleTargetControl.GetInstance(), "프로그램 컨트롤");
+			sf._SetObject(csLeft4Dead2Plugins.GetInstance(), "L4D2");
 			//sf._SetObject(csMinecraft.GetInstance(), "마크 연동");
 			//sf._SetObject(csAutoResponse.GetInstance(), "자동 응답");
 			sf.Shown += (showSender, showE) =>

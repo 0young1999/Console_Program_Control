@@ -117,7 +117,7 @@ namespace Console_Program_Control.Service
 				data.EventType = EDiscordVoiceChannelLog.상태변경;
 			}
 
-				FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordVoiceChatLog, true, data.ToString());
+			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordVoiceChatLog, true, data.ToString());
 			log.AppendLog(data);
 		}
 
@@ -163,6 +163,13 @@ namespace Console_Program_Control.Service
 			}
 
 			string msg = arg.Content;
+			csLeft4Dead2Plugins l4d2p = csLeft4Dead2Plugins.GetInstance();
+			if (message.Channel.Name.Equals(csPrivateCode.LEFT4DEAD2ChatChannelName))
+			{
+				string sendMsg = $"[{(message.Author as SocketGuildUser).DisplayName}]{msg}";
+				l4d2p.SendChat(sendMsg);
+			}
+
 			if (msg.IndexOf(setting.CommandSTX) == 0)
 			{
 				string SenderName = (message.Author as SocketGuildUser).DisplayName;
@@ -439,6 +446,25 @@ namespace Console_Program_Control.Service
 			//Console.WriteLine(msg.ToString());  //로그 출력
 			FormMain.GetInstance().MainLogAppend(eMainLogType.DiscordAPI, true, msg.ToString());
 			return Task.CompletedTask;
+		}
+
+		public bool SendMessage(string serverName, string channelName, string msg)
+		{
+			DateTime timeOut = DateTime.Now + new TimeSpan(0, 1, 0);
+			while (timeOut > DateTime.Now && client == null) Thread.Sleep(1);
+
+			if (client == null) return false;
+
+			SocketGuild? guild = client.Guilds.FirstOrDefault(g => g.Name.Equals(serverName));
+			SocketTextChannel? channel = guild?.TextChannels.FirstOrDefault(c => c.Name.Equals(channelName));
+
+			if (channel != null)
+			{
+				channel.SendMessageAsync(msg);
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

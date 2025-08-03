@@ -38,24 +38,33 @@ namespace Console_Program_Control.Service
 			threadDBBackup.Start();
 		}
 
+		#region 설정 관련
+		public string TargetServerName { get; set; }
+		public string TargetChannelName { get; set; }
+		#endregion
+
 		TcpClient tcpClient;
 		NetworkStream stream;
 		private string LastError = string.Empty;
 		private ConcurrentQueue<string> ReceiveStack = new ConcurrentQueue<string>();
 
 		private Thread threadServerConnect;
+		private static object lockSendMsg = new object();
 		private void ServerConnect()
 		{
 			FormMain main = FormMain.GetInstance();
+			csDiscord dc = csDiscord.GetInstance();
 			tcpClient = new TcpClient();
 			DateTime lastWDT = DateTime.Now;
 			main.MainLogAppend(eMainLogType.Left4Dead2Plugins, true, "서버 접속 대기 중...");
+			dc.SendMessage(csPrivateCode.DiscordServerName, csPrivateCode.LEFT4DEAD2ChatChannelName, "[LEFT4DEAD2]서버 접속 대기 중...");
 			while (true)
 			{
 				try
 				{
 					tcpClient.Connect("127.0.0.1", 27020);
 					main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, "서버 연결 완료!!!");
+					dc.SendMessage(csPrivateCode.DiscordServerName, csPrivateCode.LEFT4DEAD2ChatChannelName, "[LEFT4DEAD2]서버 연결 완료!!!");
 
 					stream = tcpClient.GetStream();
 					stream.ReadTimeout = 100;
@@ -106,9 +115,12 @@ namespace Console_Program_Control.Service
 
 						if (lastWDT + new TimeSpan(0, 0, 5) < DateTime.Now)
 						{
-							lastWDT = DateTime.Now;
-							byte[] WDbytes = Encoding.UTF8.GetBytes(((char)2) + "WDT" + ((char)3));
-							stream.Write(WDbytes, 0, WDbytes.Length);
+							lock (lockSendMsg)
+							{
+								lastWDT = DateTime.Now;
+								byte[] WDbytes = Encoding.UTF8.GetBytes(((char)2) + "WDT" + ((char)3));
+								stream.Write(WDbytes, 0, WDbytes.Length);
+							}
 						}
 
 						Thread.Sleep(1);
@@ -156,6 +168,9 @@ namespace Console_Program_Control.Service
 							case "플레이어 업적 정보 탱크":
 								PlayerKillCountStatusTANK(Receive);
 								break;
+							case "플레이어 채팅 출력":
+								GetChat(Receive);
+								break;
 							default:
 								main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"미확인 커멘드 : {Receive}");
 								break;
@@ -194,6 +209,8 @@ namespace Console_Program_Control.Service
 				main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"알수 없는 구문 : {command}");
 			}
 		}
+
+		#region 킬카운트 관련
 		private void PlayerKillCountStatus(string command, bool isNotAppendLog = false)
 		{
 			FormMain main = FormMain.GetInstance();
@@ -214,45 +231,45 @@ namespace Console_Program_Control.Service
 						return;
 					}
 
-					if (request.l4d2pd.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
+					if (request.l4d2_Kill_Count.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
 					{
-						request.l4d2pd.ResetToDayCount();
-						request.l4d2pd.lastUpdateDate = DateTime.Now;
+						request.l4d2_Kill_Count.ResetToDayCount();
+						request.l4d2_Kill_Count.lastUpdateDate = DateTime.Now;
 					}
 
 					switch (target)
 					{
 						case "Smoker":
-							request.l4d2pd.ToDay_Kill_Smoker++;
-							request.l4d2pd.Kill_Smoker++;
+							request.l4d2_Kill_Count.ToDay_Kill_Smoker++;
+							request.l4d2_Kill_Count.Kill_Smoker++;
 							break;
 						case "Boomer":
-							request.l4d2pd.ToDay_Kill_Boomer++;
-							request.l4d2pd.Kill_Boomer++;
+							request.l4d2_Kill_Count.ToDay_Kill_Boomer++;
+							request.l4d2_Kill_Count.Kill_Boomer++;
 							break;
 						case "Hunter":
-							request.l4d2pd.ToDay_Kill_Hunter++;
-							request.l4d2pd.Kill_Hunter++;
+							request.l4d2_Kill_Count.ToDay_Kill_Hunter++;
+							request.l4d2_Kill_Count.Kill_Hunter++;
 							break;
 						case "Spitter":
-							request.l4d2pd.ToDay_Kill_Spitter++;
-							request.l4d2pd.Kill_Spitter++;
+							request.l4d2_Kill_Count.ToDay_Kill_Spitter++;
+							request.l4d2_Kill_Count.Kill_Spitter++;
 							break;
 						case "Jockey":
-							request.l4d2pd.ToDay_Kill_Jockey++;
-							request.l4d2pd.Kill_Jockey++;
+							request.l4d2_Kill_Count.ToDay_Kill_Jockey++;
+							request.l4d2_Kill_Count.Kill_Jockey++;
 							break;
 						case "Charger":
-							request.l4d2pd.ToDay_Kill_Charger++;
-							request.l4d2pd.Kill_Charger++;
+							request.l4d2_Kill_Count.ToDay_Kill_Charger++;
+							request.l4d2_Kill_Count.Kill_Charger++;
 							break;
 						case "Common":
-							request.l4d2pd.ToDay_Kill_Common++;
-							request.l4d2pd.Kill_Common++;
+							request.l4d2_Kill_Count.ToDay_Kill_Common++;
+							request.l4d2_Kill_Count.Kill_Common++;
 							break;
 						case "Witch":
-							request.l4d2pd.ToDay_Kill_Witch++;
-							request.l4d2pd.Kill_Witch++;
+							request.l4d2_Kill_Count.ToDay_Kill_Witch++;
+							request.l4d2_Kill_Count.Kill_Witch++;
 							break;
 						case "":
 							return;
@@ -294,14 +311,14 @@ namespace Console_Program_Control.Service
 							return;
 						}
 
-						if (request.l4d2pd.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
+						if (request.l4d2_Kill_Count.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
 						{
-							request.l4d2pd.ResetToDayCount();
-							request.l4d2pd.lastUpdateDate = DateTime.Now;
+							request.l4d2_Kill_Count.ResetToDayCount();
+							request.l4d2_Kill_Count.lastUpdateDate = DateTime.Now;
 						}
 
-						request.l4d2pd.ToDay_Kill_Tank++;
-						request.l4d2pd.Kill_Tank++;
+						request.l4d2_Kill_Count.ToDay_Kill_Tank++;
+						request.l4d2_Kill_Count.Kill_Tank++;
 					}
 				}
 
@@ -353,6 +370,61 @@ namespace Console_Program_Control.Service
 				}
 			}
 		}
+		#endregion
+
+		#region 플레이어 채팅
+		private void GetChat(string receive)
+		{
+			if (string.IsNullOrEmpty(TargetServerName) || string.IsNullOrEmpty(TargetChannelName)) return;
+
+			FormMain main = FormMain.GetInstance();
+			csUserProfile up = csUserProfile.GetInstance();
+			List<string> splits = receive.Split("|").ToList();
+			if (splits.Count > 2)
+			{
+				string steamID64 = splits[1];
+				splits.RemoveAt(0);
+				splits.RemoveAt(0);
+				string chat = string.Join('|', splits.ToArray());
+				if (chat.IndexOf('!') == 0 || chat.IndexOf('/') == 0) return;
+
+				lock(up.LockDatas)
+				{
+					csUserProfileData request = up.datas.Where(item => item.SteamID64 == steamID64).First();
+
+					if (request == null)
+					{
+						main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"해당 유저를 찾을수 없습니다. : {receive}");
+						return;
+					}
+
+					string textout = $"[LEFT4DEAD2,{request.nick}]\n{chat}";
+					
+					csDiscord dc = csDiscord.GetInstance();
+					dc.SendMessage(TargetServerName, TargetChannelName, textout);
+				}
+			}
+			else
+			{
+				main.MainLogAppend(eMainLogType.Left4Dead2Plugins, false, $"알수 없는 구문 : {receive}");
+			}
+		}
+		public void SendChat(string msg)
+		{
+			lock (lockSendMsg)
+			{
+				if (stream != null)
+				{
+					try
+					{
+						byte[] WDbytes = Encoding.UTF8.GetBytes(((char)2) + $"SendChat|{msg}" + ((char)3));
+						stream.Write(WDbytes, 0, WDbytes.Length);
+					}
+					catch { }
+				}
+			}
+		}
+		#endregion
 
 		private static object LockDBCommunication = new object();
 		private Thread threadDBBackup;
@@ -404,7 +476,11 @@ namespace Console_Program_Control.Service
 				}
 
 				// 1분마다
-				Thread.Sleep(60000);
+				DateTime timeDelay = DateTime.Now + new TimeSpan(0, 1, 0);
+				while (timeDelay > DateTime.Now)
+				{
+					Thread.Sleep(1);
+				}
 			}
 		}
 		public string GetProfile(csUserProfileData up)
@@ -459,21 +535,21 @@ namespace Console_Program_Control.Service
 								sb.AppendLine($"힘 : {iStr.ToString("N0")} | 민첩 : {iAgi.ToString("N0")} | 체력 : {iCon.ToString("N0")} | 지능 : {iInt.ToString("N0")} | 점프 : {iJump}");
 								sb.AppendLine();
 
-								if (up.l4d2pd.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
+								if (up.l4d2_Kill_Count.lastUpdateDate.ToString("yyyy-MM-dd").Equals(DateTime.Now.ToString("yyyy-MM-dd")) == false)
 								{
-									up.l4d2pd.ResetToDayCount();
+									up.l4d2_Kill_Count.ResetToDayCount();
 								}
 
 								sb.AppendLine("======당일/종합 킬 카운트======");
-								sb.AppendLine($"탱크(협동) : {up.l4d2pd.ToDay_Kill_Tank.ToString("N0")}마리/{up.l4d2pd.Kill_Tank.ToString("N0")}마리");
-								sb.AppendLine($"부머(개인) : {up.l4d2pd.ToDay_Kill_Boomer.ToString("N0")}마리/{up.l4d2pd.Kill_Boomer.ToString("N0")}마리");
-								sb.AppendLine($"차저(개인) : {up.l4d2pd.ToDay_Kill_Charger.ToString("N0")}마리/{up.l4d2pd.Kill_Charger.ToString("N0")}마리");
-								sb.AppendLine($"헌터(개인) : {up.l4d2pd.ToDay_Kill_Hunter.ToString("N0")}마리/{up.l4d2pd.Kill_Hunter.ToString("N0")}마리");
-								sb.AppendLine($"자키(개인) : {up.l4d2pd.ToDay_Kill_Jockey.ToString("N0")}마리/{up.l4d2pd.Kill_Jockey.ToString("N0")}마리");
-								sb.AppendLine($"스모커(개인) : {up.l4d2pd.ToDay_Kill_Smoker.ToString("N0")}마리/{up.l4d2pd.Kill_Smoker.ToString("N0")}마리");
-								sb.AppendLine($"스피터(개인) : {up.l4d2pd.ToDay_Kill_Spitter.ToString("N0")}마리/{up.l4d2pd.Kill_Spitter.ToString("N0")}마리");
-								sb.AppendLine($"위치(개인) : {up.l4d2pd.ToDay_Kill_Witch.ToString("N0")}마리/{up.l4d2pd.Kill_Witch.ToString("N0")}마리");
-								sb.AppendLine($"일반 좀비(개인) : {up.l4d2pd.ToDay_Kill_Common.ToString("N0")}마리/{up.l4d2pd.Kill_Common.ToString("N0")}마리");
+								sb.AppendLine($"탱크(협동) : {up.l4d2_Kill_Count.ToDay_Kill_Tank.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Tank.ToString("N0")}마리");
+								sb.AppendLine($"부머(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Boomer.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Boomer.ToString("N0")}마리");
+								sb.AppendLine($"차저(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Charger.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Charger.ToString("N0")}마리");
+								sb.AppendLine($"헌터(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Hunter.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Hunter.ToString("N0")}마리");
+								sb.AppendLine($"자키(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Jockey.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Jockey.ToString("N0")}마리");
+								sb.AppendLine($"스모커(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Smoker.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Smoker.ToString("N0")}마리");
+								sb.AppendLine($"스피터(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Spitter.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Spitter.ToString("N0")}마리");
+								sb.AppendLine($"위치(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Witch.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Witch.ToString("N0")}마리");
+								sb.AppendLine($"일반 좀비(개인) : {up.l4d2_Kill_Count.ToDay_Kill_Common.ToString("N0")}마리/{up.l4d2_Kill_Count.Kill_Common.ToString("N0")}마리");
 
 								response = sb.ToString();
 							}

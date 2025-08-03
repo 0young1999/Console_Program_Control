@@ -646,10 +646,12 @@ namespace Console_Program_Control.Service.Command
 				case "MyProfile":
 					string response;
 					lock (up.LockDatas) { response = csLeft4Dead2Plugins.GetInstance().GetProfile(request); }
+					var button = new ComponentBuilder()
+						.WithButton("새로고침", $"btnGamePluginLeft4Dead2_MyProfile_{Context.User.Id}", ButtonStyle.Secondary);
 					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 					{
 						msg.Content = response;
-						msg.Components = new ComponentBuilder().Build(); // 버튼 제거
+						msg.Components = button.Build();
 					});
 					break;
 			}
