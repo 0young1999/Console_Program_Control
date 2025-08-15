@@ -27,10 +27,9 @@ namespace Console_Program_Control
 		{
 			tmTime.Enabled = true;
 
-			Text += "(2025-08-03 AM 11:39)";
+			Text += "(2025-08-11 PM 08:45)";
 		}
 
-		private DateTime dtLastUserDataBackup = DateTime.MinValue;
 		private void tmTime_Tick(object sender, EventArgs e)
 		{
 			// 프로그램 시작시 디스코드 접속

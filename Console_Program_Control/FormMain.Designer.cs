@@ -43,7 +43,7 @@
 			// btnSetting
 			// 
 			btnSetting.Font = new Font("D2Coding", 20.25F, FontStyle.Bold);
-			btnSetting.Location = new Point(151, 13);
+			btnSetting.Location = new Point(399, 13);
 			btnSetting.Margin = new Padding(3, 2, 3, 2);
 			btnSetting.Name = "btnSetting";
 			btnSetting.Size = new Size(86, 58);
@@ -70,7 +70,7 @@
 			// btnProgramControl
 			// 
 			btnProgramControl.Font = new Font("D2Coding", 20.25F, FontStyle.Bold);
-			btnProgramControl.Location = new Point(242, 13);
+			btnProgramControl.Location = new Point(490, 13);
 			btnProgramControl.Margin = new Padding(3, 2, 3, 2);
 			btnProgramControl.Name = "btnProgramControl";
 			btnProgramControl.Size = new Size(86, 58);
@@ -82,7 +82,7 @@
 			// btnKill
 			// 
 			btnKill.Font = new Font("D2Coding", 20.25F, FontStyle.Bold);
-			btnKill.Location = new Point(333, 13);
+			btnKill.Location = new Point(581, 13);
 			btnKill.Margin = new Padding(3, 2, 3, 2);
 			btnKill.Name = "btnKill";
 			btnKill.Size = new Size(86, 58);

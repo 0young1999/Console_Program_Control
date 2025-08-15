@@ -32,6 +32,8 @@ namespace Console_Program_Control.Service
 
 			if (isAlive()) return false;
 
+			csLeft4Dead2CoolTimeServer.GetInstance().ResetClient();
+
 			if (File.Exists(_ctc.getTarget().ProgramPath))
 			{
 				ProcessStartInfo psi = new ProcessStartInfo();

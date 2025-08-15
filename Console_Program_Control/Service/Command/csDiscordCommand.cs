@@ -494,8 +494,18 @@ namespace Console_Program_Control.Service.Command
 				sb.AppendLine("게임 플러그인");
 
 				// 버튼 생성
-				var button = new ComponentBuilder()
-					.WithButton("내 프로필 보기", $"btnGamePluginLeft4Dead2_MyProfile_{uid}", ButtonStyle.Secondary);
+				ComponentBuilder button;
+				if (uid != csPrivateCode.DiscordAdminID)
+				{
+					button = new ComponentBuilder()
+						.WithButton("내 프로필 보기", $"btnGamePluginLeft4Dead2_MyProfile_{uid}", ButtonStyle.Secondary);
+				}
+				else
+				{
+					button = new ComponentBuilder()
+						.WithButton("내 프로필 보기", $"btnGamePluginLeft4Dead2_MyProfile_{uid}", ButtonStyle.Secondary)
+						.WithButton("서버 부하", $"btnGamePluginLeft4Dead2_ServerLoad_{uid}", ButtonStyle.Secondary);
+				}
 
 				// 버튼이 포함된 메시지 응답
 				await RespondAsync(sb.ToString(), components: button.Build());
@@ -644,15 +654,47 @@ namespace Console_Program_Control.Service.Command
 			switch (splits[0])
 			{
 				case "MyProfile":
-					string response;
-					lock (up.LockDatas) { response = csLeft4Dead2Plugins.GetInstance().GetProfile(request); }
-					var button = new ComponentBuilder()
-						.WithButton("새로고침", $"btnGamePluginLeft4Dead2_MyProfile_{Context.User.Id}", ButtonStyle.Secondary);
-					await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
 					{
-						msg.Content = response;
-						msg.Components = button.Build();
-					});
+						string response;
+						lock (up.LockDatas) { response = csLeft4Dead2Plugins.GetInstance().GetProfile(request); }
+						var button = new ComponentBuilder()
+							.WithButton("새로고침", $"btnGamePluginLeft4Dead2_MyProfile_{Context.User.Id}", ButtonStyle.Secondary);
+						await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+						{
+							msg.Content = response;
+							msg.Components = button.Build();
+						});
+					}
+					break;
+				case "ServerLoad":
+					{
+						string response;
+						if (Context.User.Id != csPrivateCode.DiscordAdminID)
+						{
+							return;
+						}
+
+						csLeft4Dead2Plugins plugins = csLeft4Dead2Plugins.GetInstance();
+
+						if (splits.Length > 2 && splits[2].Equals("RESET"))
+						{
+							plugins.isResetMaxLoadFlag = true;
+						}
+						lock (plugins.ReceiveThreadLoadString)
+						{
+							response = $"{plugins.ReceiveThreadLoadString.ToString()}";
+
+						}
+
+						var button = new ComponentBuilder()
+							.WithButton("새로고침", $"btnGamePluginLeft4Dead2_ServerLoad_{Context.User.Id}", ButtonStyle.Secondary)
+							.WithButton("최대 로드 리셋", $"btnGamePluginLeft4Dead2_ServerLoad_{Context.User.Id}_RESET", ButtonStyle.Secondary);
+						await ((SocketMessageComponent)(Context.Interaction)).UpdateAsync(msg =>
+						{
+							msg.Content = response;
+							msg.Components = button.Build();
+						});
+					}
 					break;
 			}
 		}

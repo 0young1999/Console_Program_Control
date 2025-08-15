@@ -164,7 +164,7 @@ namespace Console_Program_Control.Service
 
 			string msg = arg.Content;
 			csLeft4Dead2Plugins l4d2p = csLeft4Dead2Plugins.GetInstance();
-			if (message.Channel.Name.Equals(csPrivateCode.LEFT4DEAD2ChatChannelName))
+			if (message.Channel.Name.Equals(l4d2p.TargetChannelName))
 			{
 				string sendMsg = $"[{(message.Author as SocketGuildUser).DisplayName}]{msg}";
 				l4d2p.SendChat(sendMsg);
@@ -205,7 +205,7 @@ namespace Console_Program_Control.Service
 							response = "님 혹시 기계 박이?";
 						}
 						break;
-					case "유저등록_minecreaft":
+					case "유저등록-minecreaft":
 						{
 							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
 							{
@@ -245,7 +245,7 @@ namespace Console_Program_Control.Service
 							if (isProccessDone) up.Save();
 						}
 						break;
-					case "유저등록_steamid":
+					case "유저등록-steamid":
 						{
 							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
 							{
@@ -286,11 +286,42 @@ namespace Console_Program_Control.Service
 							if (isProccessDone) up.Save();
 						}
 						break;
+					case "l4d2-tcp-부하":
+						{
+							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
+							{
+								response = "사용 불가";
+								break;
+							}
+
+							lock (l4d2p.ReceiveThreadLoadString)
+							{
+								response = $"{l4d2p.ReceiveThreadLoadString.ToString()}";
+							}
+						}
+						break;
+					case "l4d2-tcp-부하-최대-초기화":
+						{
+							if (csPrivateCode.DiscordAdminID.ToString() != SenderUID)
+							{
+								response = "사용 불가";
+								break;
+							}
+
+							lock (l4d2p.ReceiveThreadLoadString)
+							{
+								l4d2p.isResetMaxLoadFlag = true;
+								response = $"{l4d2p.ReceiveThreadLoadString.ToString()}";
+							}
+						}
+						break;
 					case "help":
 						{
 							StringBuilder sb = new StringBuilder();
-							sb.AppendLine("유저등록_Minecreaft [DISCORD UID] [MINECREAFT NAME]");
-							sb.AppendLine("유저등록_SteamID [DISCORD UID] [STEAMID] [STEAMID64]");
+							sb.AppendLine("유저등록-Minecreaft [DISCORD UID] [MINECREAFT NAME]");
+							sb.AppendLine("유저등록-SteamID [DISCORD UID] [STEAMID] [STEAMID64]");
+							sb.AppendLine("L4D2-TCP-부하");
+							sb.AppendLine("l4d2-tcp-부하-최대-초기화");
 							response = sb.ToString();
 							break;
 						}
